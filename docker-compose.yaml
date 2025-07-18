@@ -7,7 +7,7 @@ services:
     depends_on:
       - mongodb
     environment:
-      - MONGO_URL=mongodb://user:password@mongodb:27017/k8s_interview
+      - MONGO_URL=mongodb://user:password@mongodb:27017/k8s_interview?authSource=admin
 
   mongodb:
     image: mongo:7

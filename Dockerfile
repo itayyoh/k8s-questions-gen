@@ -8,7 +8,7 @@ RUN go mod download
 
 COPY backend/ .
 
-RUN go build -o main .
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
 
 
 FROM node:24-alpine3.21 AS node-build
@@ -31,3 +31,20 @@ COPY --from=go-build /backend/main /usr/local/bin/backend
 
 COPY --from=node-build /frontend/build /usr/share/nginx/html
 
+
+RUN mkdir -p /etc/supervisor/conf.d && \
+    echo '[supervisord]' > /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'nodaemon=true' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo '' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo '[program:backend]' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'command=/usr/local/bin/backend' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'autostart=true' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'autorestart=true' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo '' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo '[program:nginx]' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'command=nginx -g "daemon off;"' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'autostart=true' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'autorestart=true' >> /etc/supervisor/conf.d/supervisord.conf
+
+
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
