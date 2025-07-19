@@ -8,6 +8,8 @@ RUN go mod download
 
 COPY backend/ .
 
+COPY backend/questions.json .
+
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
 
 
@@ -26,6 +28,8 @@ RUN npm run build
 FROM nginx:alpine
 
 RUN apk add --no-cache supervisor
+
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 COPY --from=go-build /backend/main /usr/local/bin/backend
 

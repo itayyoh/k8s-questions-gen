@@ -1,0 +1,226 @@
+[
+  {
+    "question": "What is a Kubernetes Pod and what is its role in a cluster?",
+    "answer": "A Pod is the smallest deployable unit in Kubernetes, running one or more containers that share storage, network, and a specification for how to run them.",
+    "category": "Core Concepts",
+    "difficulty": "Easy",
+    "type": "open-ended"
+  },
+  {
+    "question": "What is the smallest deployable unit in Kubernetes?",
+    "answer": "Pod",
+    "category": "Basics",
+    "difficulty": "Easy",
+    "options": ["Container", "Pod", "Service", "Deployment"],
+    "type": "multiple-choice"
+  },
+  {
+    "question": "How does a Kubernetes Service ensure load balancing across Pods?",
+    "answer": "A Service distributes traffic across Pods using a consistent IP and DNS name, leveraging kube-proxy for load balancing via round-robin or other policies.",
+    "category": "Networking",
+    "difficulty": "Medium",
+    "type": "open-ended"
+  },
+  {
+    "question": "What is the purpose of a Kubernetes Namespace?",
+    "answer": "A Namespace provides a way to divide cluster resources between multiple users or teams, enabling resource isolation and management within a single cluster.",
+    "category": "Core Concepts",
+    "difficulty": "Easy",
+    "type": "open-ended"
+  },
+  {
+    "question": "Which Kubernetes component is responsible for maintaining the desired state of the cluster?",
+    "answer": "Controller Manager",
+    "category": "Architecture",
+    "difficulty": "Easy",
+    "options": ["API Server", "Controller Manager", "Scheduler", "etcd"],
+    "type": "multiple-choice"
+  },
+  {
+    "question": "What is the role of kube-scheduler in a Kubernetes cluster?",
+    "answer": "Kube-scheduler assigns Pods to Nodes based on resource requirements, constraints, and policies to optimize resource utilization.",
+    "category": "Architecture",
+    "difficulty": "Medium",
+    "type": "open-ended"
+  },
+  {
+    "question": "What does a Kubernetes Deployment ensure for an application?",
+    "answer": "A Deployment ensures that a specified number of Pods are running, handles updates, rollbacks, and scaling for stateless applications.",
+    "category": "Workloads",
+    "difficulty": "Medium",
+    "type": "open-ended"
+  },
+  {
+    "question": "Which Kubernetes object is used to manage stateful applications?",
+    "answer": "StatefulSet",
+    "category": "Workloads",
+    "difficulty": "Medium",
+    "options": ["Deployment", "StatefulSet", "DaemonSet", "Job"],
+    "type": "multiple-choice"
+  },
+  {
+    "question": "What is the function of a ConfigMap in Kubernetes?",
+    "answer": "A ConfigMap stores configuration data as key-value pairs, which can be injected into Pods as environment variables, command-line arguments, or configuration files.",
+    "category": "Configuration",
+    "difficulty": "Easy",
+    "type": "open-ended"
+  },
+  {
+    "question": "How does a Kubernetes Secret differ from a ConfigMap?",
+    "answer": "A Secret is used to store sensitive data like passwords or API keys, encoded in base64, while a ConfigMap stores non-sensitive configuration data.",
+    "category": "Configuration",
+    "difficulty": "Medium",
+    "type": "open-ended"
+  },
+  {
+    "question": "What is the primary role of etcd in a Kubernetes cluster?",
+    "answer": "etcd is a distributed key-value store that holds the cluster's configuration data and state, ensuring consistency across the control plane.",
+    "category": "Architecture",
+    "difficulty": "Medium",
+    "type": "open-ended"
+  },
+  {
+    "question": "Which Kubernetes object ensures a Pod runs on every Node in the cluster?",
+    "answer": "DaemonSet",
+    "category": "Workloads",
+    "difficulty": "Medium",
+    "options": ["Deployment", "StatefulSet", "DaemonSet", "CronJob"],
+    "type": "multiple-choice"
+  },
+  {
+    "question": "What is a Kubernetes Ingress used for?",
+    "answer": "An Ingress manages external HTTP/HTTPS traffic to Services, providing load balancing, SSL termination, and name-based virtual hosting.",
+    "category": "Networking",
+    "difficulty": "Medium",
+    "type": "open-ended"
+  },
+  {
+    "question": "What is the purpose of a Kubernetes ReplicaSet?",
+    "answer": "A ReplicaSet ensures a specified number of Pod replicas are running at any given time, typically managed by a Deployment.",
+    "category": "Workloads",
+    "difficulty": "Easy",
+    "type": "open-ended"
+  },
+  {
+    "question": "Which command is used to view the logs of a Pod in Kubernetes?",
+    "answer": "kubectl logs <pod-name>",
+    "category": "CLI",
+    "difficulty": "Easy",
+    "type": "open-ended"
+  },
+  {
+    "question": "What is a Kubernetes Node?",
+    "answer": "A Node is a worker machine (physical or virtual) in a Kubernetes cluster that runs Pods and is managed by the control plane.",
+    "category": "Core Concepts",
+    "difficulty": "Easy",
+    "type": "open-ended"
+  },
+  {
+    "question": "Which Kubernetes component acts as the entry point for all administrative commands?",
+    "answer": "API Server",
+    "category": "Architecture",
+    "difficulty": "Easy",
+    "options": ["Controller Manager", "API Server", "Scheduler", "Kubelet"],
+    "type": "multiple-choice"
+  },
+  {
+    "question": "What does the kubectl apply command do in Kubernetes?",
+    "answer": "The kubectl apply command creates or updates resources in a cluster based on a configuration file, using declarative management.",
+    "category": "CLI",
+    "difficulty": "Medium",
+    "type": "open-ended"
+  },
+  {
+    "question": "What is the purpose of a Kubernetes Job?",
+    "answer": "A Job creates one or more Pods to run a task to completion, then terminates the Pods once the task is finished.",
+    "category": "Workloads",
+    "difficulty": "Medium",
+    "type": "open-ended"
+  },
+  {
+    "question": "What is a CronJob in Kubernetes used for?",
+    "answer": "A CronJob schedules and runs Jobs at specified times or intervals, automating recurring tasks.",
+    "category": "Workloads",
+    "difficulty": "Medium",
+    "type": "open-ended"
+  },
+  {
+    "question": "Which Kubernetes object is used to persistently store data for Pods?",
+    "answer": "PersistentVolume",
+    "category": "Storage",
+    "difficulty": "Medium",
+    "options": ["ConfigMap", "Secret", "PersistentVolume", "Service"],
+    "type": "multiple-choice"
+  },
+  {
+    "question": "What is the difference between a PersistentVolume and a PersistentVolumeClaim?",
+    "answer": "A PersistentVolume is a cluster-wide storage resource, while a PersistentVolumeClaim is a request for storage by a user or Pod that binds to a PersistentVolume.",
+    "category": "Storage",
+    "difficulty": "Medium",
+    "type": "open-ended"
+  },
+  {
+    "question": "What does the kubelet do on a Kubernetes Node?",
+    "answer": "The kubelet is an agent that runs on each Node, ensuring that containers in Pods are running and healthy, communicating with the API server.",
+    "category": "Architecture",
+    "difficulty": "Medium",
+    "type": "open-ended"
+  },
+  {
+    "question": "What is the purpose of a Kubernetes ServiceAccount?",
+    "answer": "A ServiceAccount provides an identity for Pods to interact with the Kubernetes API, enabling authentication and authorization for cluster operations.",
+    "category": "Security",
+    "difficulty": "Medium",
+    "type": "open-ended"
+  },
+  {
+    "question": "Which Kubernetes resource defines policies for network access between Pods?",
+    "answer": "NetworkPolicy",
+    "category": "Networking",
+    "difficulty": "Hard",
+    "type": "open-ended"
+  },
+  {
+    "question": "What is the role of kube-proxy in a Kubernetes cluster?",
+    "answer": "Kube-proxy manages network rules on Nodes to enable communication between Services and Pods, facilitating load balancing and traffic routing.",
+    "category": "Networking",
+    "difficulty": "Medium",
+    "type": "open-ended"
+  },
+  {
+    "question": "Which command scales a Deployment in Kubernetes?",
+    "answer": "kubectl scale deployment <deployment-name> --replicas=<number>",
+    "category": "CLI",
+    "difficulty": "Medium",
+    "type": "open-ended"
+  },
+  {
+    "question": "What is a Kubernetes ClusterRole?",
+    "answer": "A ClusterRole defines permissions for resources across the entire cluster, used in role-based access control (RBAC) to manage access.",
+    "category": "Security",
+    "difficulty": "Hard",
+    "type": "open-ended"
+  },
+  {
+    "question": "What is the purpose of a Kubernetes Taint and Toleration?",
+    "answer": "Taints mark Nodes to repel Pods unless those Pods have matching Tolerations, allowing control over where Pods are scheduled.",
+    "category": "Scheduling",
+    "difficulty": "Hard",
+    "type": "open-ended"
+  },
+  {
+    "question": "Which Kubernetes object is used to run a single task that terminates after completion?",
+    "answer": "Job",
+    "category": "Workloads",
+    "difficulty": "Easy",
+    "options": ["CronJob", "Job", "StatefulSet", "ReplicaSet"],
+    "type": "multiple-choice"
+  },
+  {
+    "question": "What is the purpose of the Kubernetes API Server?",
+    "answer": "The API Server is the central management point for the cluster, handling all RESTful API requests and updating the state in etcd.",
+    "category": "Architecture",
+    "difficulty": "Medium",
+    "type": "open-ended"
+  }
+]

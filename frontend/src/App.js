@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { ChevronDown, ChevronRight, RefreshCw, BookOpen, Target } from 'lucide-react';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8081';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost';
 
 function App() {
   const [questions, setQuestions] = useState([]);

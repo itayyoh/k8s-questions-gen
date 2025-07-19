@@ -80,29 +80,21 @@ func seedData() {
 		return
 	}
 
-	// Your existing hardcoded questions
-	initialQuestions := []Question{
-		{
-			Question:   "What is a Kubernetes Pod and what is its role in a cluster?",
-			Answer:     "A Pod is the smallest deployable unit in Kubernetes, running one or more containers that share storage, network, and a specification for how to run them.",
-			Category:   "Core Concepts",
-			Difficulty: "Easy",
-			Type:       "open-ended",
-		},
-		{
-			Question:   "What is the smallest deployable unit in Kubernetes?",
-			Answer:     "Pod",
-			Category:   "Basics",
-			Difficulty: "Easy",
-			Options:    []string{"Container", "Pod", "Service", "Deployment"},
-			Type:       "multiple-choice",
-		},
-		// Add all your existing questions here...
+	data, err := os.ReadFile("questions.json")
+	if err != nil {
+		log.Printf("Error reading file: %v", err)
+		return
 	}
 
-	// Convert to interface{} slice for MongoDB insertion
+	var questions []Question
+	err = json.Unmarshal(data, &questions)
+	if err != nil {
+		log.Printf("Error parsing questions JSON: %v", err)
+		return
+	}
+
 	var docs []interface{}
-	for _, q := range initialQuestions {
+	for _, q := range questions {
 		docs = append(docs, q)
 	}
 
@@ -220,6 +212,6 @@ func main() {
 
 	handler := c.Handler(r)
 
-	log.Println("Server starting on :8080")
-	log.Fatal(http.ListenAndServe(":8080", handler))
+	log.Println("Server starting on :8082")
+	log.Fatal(http.ListenAndServe(":8082", handler))
 }
