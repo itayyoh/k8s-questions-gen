@@ -8,8 +8,6 @@ RUN go mod download
 
 COPY backend/ .
 
-COPY backend/questions.json .
-
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
 
 
@@ -32,6 +30,8 @@ RUN apk add --no-cache supervisor
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 COPY --from=go-build /backend/main /usr/local/bin/backend
+
+COPY --from=go-build /backend/questions.json /questions.json
 
 COPY --from=node-build /frontend/build /usr/share/nginx/html
 
