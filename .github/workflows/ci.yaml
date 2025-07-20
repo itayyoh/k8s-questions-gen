@@ -1,0 +1,158 @@
+name: CI-WORKFLOW
+
+on:
+  push:
+    branches:
+      - feature/*
+      - main
+
+env:
+  GO_VERSION: '1.21'
+  NODE_VERSION: '18'
+
+jobs:
+  test-backend:  # Fixed job name
+    runs-on: ubuntu-latest
+    name: test golang backend
+
+    steps:
+    - name: checkout
+      uses: actions/checkout@v4
+
+    - name: setup golang ${{ env.GO_VERSION }}
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+
+    - name: Download Go dependencies 
+      run: |
+        cd backend
+        go mod download  # Fixed: lowercase 'd'
+        go mod tidy
+
+    - name: run tests 
+      run: |
+        cd backend
+        go test ./... -v  # Fixed: removed '4'
+
+    - name: check format
+      run: |
+        cd backend
+        if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then  # Fixed: added space
+          echo "failed formatting code"
+          gofmt -s -l .
+          exit 1
+        fi
+        echo "code formatted successfully"  # Fixed typo
+
+    - name: build go binary
+      run: |
+        cd backend
+        CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .  # Added '.'
+        echo "backend built successfully"  # Fixed typo
+
+  test-frontend:  # Fixed: proper indentation
+    runs-on: ubuntu-latest
+    name: test react component
+
+    steps:
+    - name: checkout
+      uses: actions/checkout@v4
+
+    - name: set up node.js ${{ env.NODE_VERSION }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+
+    - name: install dependencies
+      run: |
+        cd frontend
+        npm ci 
+
+    - name: run frontend tests
+      run: | 
+        cd frontend
+        npm test -- --passWithNoTests --watchAll=false  # Added proper test command
+        npm run build
+        echo "react built successfully"  # Fixed typo
+
+    - name: upload test coverage
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: frontend-coverage
+        path: frontend/coverage/
+
+  build-docker:
+    runs-on: ubuntu-latest
+    name: build-image
+    needs: [test-backend, test-frontend]  # Fixed job names
+
+    steps:
+    - name: checkout 
+      uses: actions/checkout@v4
+
+    - name: set up docker build
+      uses: docker/setup-buildx-action@v3
+
+    - name: build image
+      run: |
+        docker build \
+          --tag k8s-interview-app:${{ github.sha }} \
+          --tag k8s-interview-app:latest \
+          .
+        echo "image built!"
+
+    - name: test image
+      run: |
+        docker run --rm --detach --name test-container k8s-interview-app:latest  # Added :latest
+        sleep 5
+        if docker ps | grep test-container; then
+          echo "container is running as expected stopping now"
+          docker stop test-container
+        else
+          echo "container failed to start"
+          docker logs test-container || true
+          exit 1 
+        fi
+
+  security-scan:
+    runs-on: ubuntu-latest
+    name: sec scan
+
+    steps:
+    - name: checkout
+      uses: actions/checkout@v4
+
+    - name: run trivy vulnerability scan   # Fixed typo
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'table'
+        exit-code: '0'
+
+  build-conclusion:
+    runs-on: ubuntu-latest
+    name: build conclusion
+    needs: [test-backend, test-frontend, build-docker, security-scan]  # Removed non-existent job
+    if: always()
+
+    steps:
+    - name: print conclusion
+      run: |
+        echo "build summary for branch: ${{ github.ref_name }}"  # Fixed spacing
+        echo "backend-tests: ${{ needs.test-backend.result }}"
+        echo "frontend-tests: ${{ needs.test-frontend.result }}"
+        echo "docker-build: ${{ needs.build-docker.result }}"
+        echo "sec-scan: ${{ needs.security-scan.result }}"  # Fixed spacing
+
+        if [[ "${{ needs.test-backend.result }}" == "success" && \
+              "${{ needs.test-frontend.result }}" == "success" && \
+              "${{ needs.build-docker.result }}" == "success" ]]; then  # Fixed syntax
+          echo "all tests passed!"
+        else
+          echo "some tests failed check logs please to continue"
+        fi
