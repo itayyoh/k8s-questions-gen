@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -26,6 +27,19 @@ type Question struct {
 	Difficulty string             `json:"difficulty" bson:"difficulty"`
 	Options    []string           `json:"options,omitempty" bson:"options,omitempty"`
 	Type       string             `json:"type" bson:"type"`
+}
+
+type SubmissionRequest struct {
+	QuestionID string `json:"question_id"`
+	Answer     string `json:"answer"`
+	Type       string `json:"type"`
+}
+
+type SubmissionResponse struct {
+	Correct       bool   `json:"correct"`
+	CorrectAnswer string `json:"correct_answer"`
+	Explanation   string `json:"explanation,omitempty"`
+	Score         int    `json:"score,omitempty"`
 }
 
 var mongoClient *mongo.Client
@@ -181,6 +195,58 @@ func getCategories(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(categories)
 }
 
+func submitAnswer(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	var submission SubmissionRequest
+	if err := json.NewDecoder(r.Body).Decode(&submission); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	ctx := context.Background()
+
+	objectID, err := primitive.ObjectIDFromHex(submission.QuestionID)
+	if err != nil {
+		http.Error(w, "Invalid question id", http.StatusBadRequest)
+		return
+	}
+
+	var question Question
+	err = questionsCollection.FindOne(ctx, bson.M{"_id": objectID}).Decode(&question)
+	if err != nil {
+		http.Error(w, "Question not found", http.StatusNotFound)
+		return
+	}
+
+	response := SubmissionResponse{
+		CorrectAnswer: question.Answer,
+	}
+
+	if question.Type == "multiple-choice" {
+		response.Correct = strings.EqualFold(strings.TrimSpace(submission.Answer), strings.TrimSpace(question.Answer))
+	} else {
+		response.Correct = containsKeywords(submission.Answer, question.Answer)
+	}
+
+	if response.Correct {
+		response.Score = 1
+		response.Explanation = "Correct!"
+	} else {
+		response.Score = 0
+		response.Explanation = "False"
+	}
+
+	json.NewEncoder(w).Encode(response)
+}
+
+func containsKeywords(userAnswer, CorrectAnswer string) bool {
+	userLower := strings.ToLower(userAnswer)
+	correctLower := strings.ToLower(CorrectAnswer)
+
+	return strings.Contains(userLower, correctLower) || strings.Contains(correctLower, userLower)
+}
+
 func main() {
 	// Connect to database first
 	connectDB()
@@ -194,7 +260,7 @@ func main() {
 
 	r := mux.NewRouter()
 
-	// API routes
+	// API routes - MOVE THESE INSIDE main() and BEFORE starting server
 	r.HandleFunc("/api/questions/random/{count}", getRandomQuestions).Methods("GET")
 	r.HandleFunc("/api/questions/category/{category}", getQuestionsByCategory).Methods("GET")
 	r.HandleFunc("/api/categories", getCategories).Methods("GET")
@@ -202,6 +268,7 @@ func main() {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))
 	}).Methods("GET")
+	r.HandleFunc("/api/submit", submitAnswer).Methods("POST")
 
 	// CORS
 	c := cors.New(cors.Options{
