@@ -51,7 +51,7 @@ jobs:
         CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .  # Added '.'
         echo "backend built successfully"  # Fixed typo
 
-  test-frontend:  # Fixed: proper indentation
+  test-frontend:  
     runs-on: ubuntu-latest
     name: test react component
 
@@ -74,12 +74,12 @@ jobs:
     - name: run frontend tests
       run: | 
         cd frontend
-        npm test -- --passWithNoTests --watchAll=false  # Added proper test command
+        npm test -- --passWithNoTests --watchAll=false  
         npm run build
-        echo "react built successfully"  # Fixed typo
+        echo "react built successfully"  
 
     - name: upload test coverage
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: frontend-coverage
