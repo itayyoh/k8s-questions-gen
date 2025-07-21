@@ -10,7 +10,7 @@ module.exports = {
     extensionsToTreatAsEsm: ['.jsx'],
     globals: {
         'ts-jest': {
-            useESM: true
+          useESM: true
         }
     }
-}
+};
