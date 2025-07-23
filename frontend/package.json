@@ -20,16 +20,6 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
-    "jest": {
-    "testEnvironment": "jsdom",
-    "transform": {
-      "^.+\\.(js|jsx)$": "babel-jest"
-    },
-    "moduleNameMapping": {
-      "\\.(css|less|scss|sass)$": "identity-obj-proxy"
-    },
-    "setupFilesAfterEnv": ["<rootDir>/src/setupTests.js"]
-    },
   "eslintConfig": {
     "extends": [
       "react-app",
