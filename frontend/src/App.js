@@ -73,7 +73,11 @@ function App() {
         [questionId]: response.data
       }));
       
-
+    } catch (error) {
+      console.error('Error submitting answer:', error);
+    }
+  };
+  
   const getDifficultyColor = (difficulty) => {
     switch (difficulty) {
       case 'Easy': return 'bg-green-100 text-green-800';
