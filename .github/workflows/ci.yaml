@@ -4,9 +4,11 @@ on:
   push:
     branches:
       - feature/*
+      - feature
       - main
-      - ci-*
-      - add-*
+  pull_request:
+    branches:
+      - main
 
 env:
   GO_VERSION: '1.21'
