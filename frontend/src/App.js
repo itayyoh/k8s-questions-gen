@@ -13,7 +13,6 @@ function App() {
   const [showAnswers, setShowAnswers] = useState({});
   const [selectedAnswers, setSelectedAnswers] = useState({});
   const [submissions, setSubmissions] = useState({});
-  const [showResults, setShowResults] = useState({});
 
   useEffect(() => {
     loadCategories();
@@ -41,7 +40,6 @@ function App() {
       setSelectedAnswers({});
       setSubmissions({});
       setShowAnswers({});
-      setShowResults({});
     } catch (error) {
       console.error('Error loading questions:', error);
     }
