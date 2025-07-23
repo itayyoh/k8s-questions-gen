@@ -73,14 +73,6 @@ function App() {
         [questionId]: response.data
       }));
       
-      setShowResults(prev => ({
-        ...prev,
-        [questionId]: true
-      }));
-    } catch (error) {
-      console.error('Error submitting answer:', error);
-    }
-  };
 
   const getDifficultyColor = (difficulty) => {
     switch (difficulty) {
