@@ -122,6 +122,22 @@ func seedData() {
 	log.Printf("Seeded %d questions successfully", len(result.InsertedIDs))
 }
 
+// Helper function to serve JSON files
+func serveJSONFile(filename string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		data, err := os.ReadFile(filename)
+		if err != nil {
+			log.Printf("Error reading file %s: %v", filename, err)
+			http.Error(w, "File not found", http.StatusNotFound)
+			return
+		}
+
+		w.Write(data)
+	}
+}
+
 func getRandomQuestions(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -234,7 +250,7 @@ func submitAnswer(w http.ResponseWriter, r *http.Request) {
 		response.Explanation = "Correct!"
 	} else {
 		response.Score = 0
-		response.Explanation = "False"
+		response.Explanation = "Incorrect. Please review the correct answer."
 	}
 
 	json.NewEncoder(w).Encode(response)
@@ -260,15 +276,22 @@ func main() {
 
 	r := mux.NewRouter()
 
-	// API routes - MOVE THESE INSIDE main() and BEFORE starting server
+	// Existing API routes (questions come from MongoDB, seeded from questions.json)
 	r.HandleFunc("/api/questions/random/{count}", getRandomQuestions).Methods("GET")
 	r.HandleFunc("/api/questions/category/{category}", getQuestionsByCategory).Methods("GET")
 	r.HandleFunc("/api/categories", getCategories).Methods("GET")
+	r.HandleFunc("/api/submit", submitAnswer).Methods("POST")
+
+	// New JSON data endpoints (serve static JSON files)
+	r.HandleFunc("/api/ui-config", serveJSONFile("ui-config.json")).Methods("GET")
+	r.HandleFunc("/api/interview-scenarios", serveJSONFile("interview-scenarios.json")).Methods("GET")
+	r.HandleFunc("/api/homepage-data", serveJSONFile("homepage-data.json")).Methods("GET")
+
+	// Health check
 	r.HandleFunc("/api/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))
 	}).Methods("GET")
-	r.HandleFunc("/api/submit", submitAnswer).Methods("POST")
 
 	// CORS
 	c := cors.New(cors.Options{

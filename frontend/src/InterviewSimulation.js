@@ -1,160 +1,118 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Clock, User, Code, AlertTriangle, ArrowLeft, Play, ArrowRight } from 'lucide-react';
+import { loadInterviewScenarios } from './utils/dataLoader';
 
 const InterviewSimulation = () => {
   const navigate = useNavigate();
-  const [currentPhase, setCurrentPhase] = useState('intro'); // intro, personal, technical, scenario, results
+  const [currentPhase, setCurrentPhase] = useState('intro');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState({});
-  const [timeRemaining, setTimeRemaining] = useState(180); // 3 minutes per question
+  const [timeRemaining, setTimeRemaining] = useState(180);
   const [interviewStarted, setInterviewStarted] = useState(false);
+  const [scenarioData, setScenarioData] = useState(null);
+  const [currentAnswer, setCurrentAnswer] = useState('');
 
-  const phases = {
-    personal: {
-      title: "Getting to Know You",
-      icon: User,
-      color: "blue",
-      questions: [
-        {
-          id: 1,
-          question: "Tell me about yourself and your background in technology.",
-          type: "personal",
-          timeLimit: 180
-        },
-        {
-          id: 2,
-          question: "What got you interested in DevOps specifically?",
-          type: "personal", 
-          timeLimit: 120
-        },
-        {
-          id: 3,
-          question: "Describe a challenging project you've worked on recently.",
-          type: "personal",
-          timeLimit: 180
-        }
-      ]
-    },
-    technical: {
-      title: "Technical Knowledge",
-      icon: Code,
-      color: "green",
-      questions: [
-        {
-          id: 4,
-          question: "Explain the difference between Docker containers and virtual machines.",
-          type: "technical",
-          timeLimit: 300
-        },
-        {
-          id: 5,
-          question: "How would you implement a CI/CD pipeline for a microservices application?",
-          type: "technical",
-          timeLimit: 360
-        },
-        {
-          id: 6,
-          question: "What are the key components of Kubernetes architecture?",
-          type: "technical",
-          timeLimit: 240
-        }
-      ]
-    },
-    scenario: {
-      title: "Problem Solving",
-      icon: AlertTriangle,
-      color: "red",
-      questions: [
-        {
-          id: 7,
-          question: `**Debugging Scenario:**
-          
-Your production Kubernetes cluster is experiencing issues. Pods are randomly crashing with the following symptoms:
+  // Load scenario data on component mount
+  useEffect(() => {
+    const loadData = async () => {
+      const data = await loadInterviewScenarios();
+      setScenarioData(data);
+    };
+    loadData();
+  }, []);
 
-- CPU usage spikes to 100%
-- Memory usage shows OOMKilled errors
-- Application logs show connection timeouts
-- Some pods are in CrashLoopBackOff state
-
-**Your task:** Walk me through your debugging process. What commands would you run and what would you look for?`,
-          type: "scenario",
-          timeLimit: 600, // 10 minutes
-          hints: [
-            "Think about resource limits and requests",
-            "Consider checking node resources",
-            "What about network policies or DNS issues?"
-          ]
-        }
-      ]
-    }
+  const iconMap = {
+    User,
+    Code,
+    AlertTriangle
   };
 
-  const startInterview = () => {
-    setInterviewStarted(true);
-    setCurrentPhase('personal');
-    setTimeRemaining(phases.personal.questions[0].timeLimit);
-  };
-
-  const getCurrentQuestions = () => {
-    if (currentPhase === 'intro' || currentPhase === 'results') return [];
-    return phases[currentPhase].questions;
-  };
-
-  const getCurrentQuestion = () => {
-    const questions = getCurrentQuestions();
-    return questions[currentQuestionIndex] || null;
-  };
-
-  const nextQuestion = () => {
-    const questions = getCurrentQuestions();
+  // Handle next question logic
+  const handleNextQuestion = useCallback(() => {
+    if (!scenarioData) return;
     
-    if (currentQuestionIndex < questions.length - 1) {
+    // Save current answer before moving to next question
+    const question = getCurrentQuestion();
+    if (question && currentAnswer) {
+      setAnswers(prev => ({
+        ...prev,
+        [question.id]: currentAnswer
+      }));
+    }
+    
+    const phase = scenarioData.phases[currentPhase];
+    const nextQuestionIndex = currentQuestionIndex + 1;
+
+    if (nextQuestionIndex < phase.questions.length) {
       // Next question in same phase
-      const nextIndex = currentQuestionIndex + 1;
-      setCurrentQuestionIndex(nextIndex);
-      setTimeRemaining(questions[nextIndex].timeLimit);
+      setCurrentQuestionIndex(nextQuestionIndex);
+      setTimeRemaining(phase.questions[nextQuestionIndex].timeLimit);
+      setCurrentAnswer('');
     } else {
       // Move to next phase
       if (currentPhase === 'personal') {
         setCurrentPhase('technical');
         setCurrentQuestionIndex(0);
-        setTimeRemaining(phases.technical.questions[0].timeLimit);
+        setTimeRemaining(scenarioData.phases.technical.questions[0].timeLimit);
+        setCurrentAnswer('');
       } else if (currentPhase === 'technical') {
         setCurrentPhase('scenario');
         setCurrentQuestionIndex(0);
-        setTimeRemaining(phases.scenario.questions[0].timeLimit);
+        setTimeRemaining(scenarioData.phases.scenario.questions[0].timeLimit);
+        setCurrentAnswer('');
       } else {
+        // Interview complete
         setCurrentPhase('results');
       }
     }
-  };
-
-  const handleAnswer = (answer) => {
-    const question = getCurrentQuestion();
-    setAnswers(prev => ({
-      ...prev,
-      [question.id]: {
-        question: question.question,
-        answer: answer,
-        timeSpent: question.timeLimit - timeRemaining,
-        phase: currentPhase
-      }
-    }));
-  };
+  }, [scenarioData, currentPhase, currentQuestionIndex, currentAnswer]);
 
   // Timer effect
   useEffect(() => {
-    if (interviewStarted && timeRemaining > 0 && currentPhase !== 'results') {
-      const timer = setTimeout(() => {
-        setTimeRemaining(timeRemaining - 1);
-      }, 1000);
-      return () => clearTimeout(timer);
-    } else if (timeRemaining === 0) {
-      // Auto advance when time runs out
-      nextQuestion();
+    if (!interviewStarted || currentPhase === 'intro' || currentPhase === 'results') return;
+
+    const timer = setInterval(() => {
+      setTimeRemaining(prev => {
+        if (prev <= 1) {
+          // Auto-advance to next question when time runs out
+          handleNextQuestion();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [interviewStarted, currentPhase, currentQuestionIndex, handleNextQuestion]);
+
+  const getCurrentQuestion = () => {
+    if (!scenarioData) return null;
+    const phase = scenarioData.phases[currentPhase];
+    return phase?.questions[currentQuestionIndex];
+  };
+
+  const handleStartInterview = () => {
+    if (!scenarioData || !scenarioData.phases || !scenarioData.phases.personal) {
+      console.error('Interview scenarios not loaded properly');
+      return;
     }
-  }, [timeRemaining, interviewStarted, currentPhase]);
+    setInterviewStarted(true);
+    setCurrentPhase('personal');
+    setCurrentQuestionIndex(0);
+    const firstQuestion = scenarioData.phases.personal.questions[0];
+    setTimeRemaining(firstQuestion?.timeLimit || 180);
+  };
+
+  const handleSaveAnswer = () => {
+    const question = getCurrentQuestion();
+    if (question) {
+      setAnswers(prev => ({
+        ...prev,
+        [question.id]: currentAnswer
+      }));
+    }
+  };
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -162,73 +120,115 @@ Your production Kubernetes cluster is experiencing issues. Pods are randomly cra
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const getPhaseColor = (phase) => {
-    const colors = {
-      blue: 'from-blue-500 to-blue-600',
-      green: 'from-green-500 to-green-600', 
-      red: 'from-red-500 to-red-600'
+  const getPhaseColorClasses = (phase) => {
+    const colorClasses = {
+      personal: 'bg-blue-100 text-blue-800 border-blue-200',
+      technical: 'bg-green-100 text-green-800 border-green-200',
+      scenario: 'bg-red-100 text-red-800 border-red-200'
     };
-    return colors[phase] || colors.blue;
+    return colorClasses[phase] || 'bg-gray-100 text-gray-800 border-gray-200';
   };
+
+  // Loading state
+  if (!scenarioData || !scenarioData.phases) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-pink-900 flex items-center justify-center">
+        <div className="text-white">Loading interview scenarios...</div>
+      </div>
+    );
+  }
+
+  const phases = scenarioData.phases;
+
+  // Additional safety check
+  if (!phases.personal || !phases.technical || !phases.scenario) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-pink-900 flex items-center justify-center">
+        <div className="text-white text-center">
+          <p>Unable to load interview scenarios.</p>
+          <button
+            onClick={() => navigate('/')}
+            className="mt-4 bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+          >
+            Back to Home
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (currentPhase === 'intro') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-indigo-900">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-pink-900">
         <div className="container mx-auto px-4 py-12">
-          
-          <button
-            onClick={() => navigate('/')}
-            className="flex items-center space-x-2 text-blue-400 hover:text-blue-300 mb-8"
-          >
-            <ArrowLeft className="h-5 w-5" />
-            <span>Back to Home</span>
-          </button>
+          <div className="max-w-4xl mx-auto">
+            
+            <button
+              onClick={() => navigate('/')}
+              className="flex items-center space-x-2 text-white/80 hover:text-white mb-8 transition-colors"
+            >
+              <ArrowLeft className="h-5 w-5" />
+              <span>Back to Home</span>
+            </button>
 
-          <div className="max-w-4xl mx-auto text-center">
-            <div className="bg-white rounded-2xl p-12 shadow-2xl">
-              
-              <div className="bg-purple-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
-                <users className="h-10 w-10 text-purple-600" />
-              </div>
-
-              <h1 className="text-4xl font-bold text-gray-900 mb-6">
+            <div className="text-center mb-12">
+              <h1 className="text-5xl font-bold text-white mb-4">
                 DevOps Interview Simulation
               </h1>
-              
-              <p className="text-xl text-gray-600 mb-8">
-                Experience a realistic DevOps interview with three phases:
+              <p className="text-xl text-purple-200 max-w-2xl mx-auto">
+                Experience a realistic DevOps interview with three phases: personal questions, 
+                technical knowledge, and hands-on problem solving.
               </p>
+            </div>
 
-              <div className="grid md:grid-cols-3 gap-6 mb-10">
-                <div className="text-center p-4">
-                  <User className="h-8 w-8 text-blue-600 mx-auto mb-3" />
-                  <h3 className="font-semibold text-gray-900">Personal Questions</h3>
-                  <p className="text-sm text-gray-600">Background & motivation</p>
-                </div>
-                <div className="text-center p-4">
-                  <Code className="h-8 w-8 text-green-600 mx-auto mb-3" />
-                  <h3 className="font-semibold text-gray-900">Technical Questions</h3>
-                  <p className="text-sm text-gray-600">DevOps concepts & tools</p>
-                </div>
-                <div className="text-center p-4">
-                  <AlertTriangle className="h-8 w-8 text-red-600 mx-auto mb-3" />
-                  <h3 className="font-semibold text-gray-900">Problem Scenarios</h3>
-                  <p className="text-sm text-gray-600">Real-world debugging</p>
-                </div>
-              </div>
+            <div className="grid md:grid-cols-3 gap-8 mb-12">
+              {Object.entries(phases).map(([key, phase]) => {
+                const IconComponent = iconMap[phase.icon] || User;
+                
+                return (
+                  <div key={key} className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
+                    <div className="text-center">
+                      <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${
+                        key === 'personal' ? 'bg-blue-500' :
+                        key === 'technical' ? 'bg-green-500' : 'bg-red-500'
+                      }`}>
+                        <IconComponent className="h-8 w-8 text-white" />
+                      </div>
+                      <h3 className="text-xl font-bold text-white mb-2">{phase.title}</h3>
+                      <p className="text-purple-200 mb-4">
+                        {phase.questions.length} questions
+                      </p>
+                      <div className="text-sm text-purple-300">
+                        Est. time: {Math.round(phase.questions.reduce((total, q) => total + q.timeLimit, 0) / 60)} minutes
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
 
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-8">
-                <p className="text-yellow-800">
-                  <strong>Note:</strong> Each question is timed. Take your time to think, but be concise and clear in your responses.
+            <div className="text-center">
+              <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 mb-8">
+                <h2 className="text-2xl font-bold text-white mb-4">Ready to Begin?</h2>
+                <p className="text-purple-200 mb-6">
+                  This simulation will take approximately 30-45 minutes. Make sure you have a quiet environment 
+                  and won't be interrupted. Each question is timed, so think carefully but don't overthink.
                 </p>
+                <ul className="text-left text-purple-200 max-w-md mx-auto mb-6 space-y-2">
+                  <li>• Questions are timed - you can't go back</li>
+                  <li>• Speak your thoughts out loud (like a real interview)</li>
+                  <li>• Take your time to think before answering</li>
+                  <li>• Be honest and authentic</li>
+                </ul>
               </div>
 
               <button
-                onClick={startInterview}
-                className="bg-purple-600 text-white px-8 py-4 rounded-lg hover:bg-purple-700 transition duration-200 flex items-center space-x-3 mx-auto text-lg font-semibold"
+                onClick={handleStartInterview}
+                className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-4 rounded-2xl text-xl font-semibold hover:from-purple-700 hover:to-pink-700 transition-all duration-200 flex items-center space-x-3 mx-auto group"
               >
                 <Play className="h-6 w-6" />
                 <span>Start Interview</span>
+                <ArrowRight className="h-6 w-6 group-hover:translate-x-1 transition-transform" />
               </button>
             </div>
           </div>
@@ -237,34 +237,52 @@ Your production Kubernetes cluster is experiencing issues. Pods are randomly cra
     );
   }
 
-  const currentQuestion = getCurrentQuestion();
-  const phaseInfo = phases[currentPhase];
-
   if (currentPhase === 'results') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-indigo-900">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-pink-900">
         <div className="container mx-auto px-4 py-12">
-          <div className="max-w-4xl mx-auto">
-            <div className="bg-white rounded-2xl p-12 shadow-2xl text-center">
-              <h1 className="text-4xl font-bold text-gray-900 mb-6">
+          <div className="max-w-4xl mx-auto text-center">
+            
+            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-12 border border-white/20">
+              <h1 className="text-4xl font-bold text-white mb-6">
                 Interview Complete! 🎉
               </h1>
-              <p className="text-xl text-gray-600 mb-8">
-                Great job completing the DevOps interview simulation!
+              <p className="text-xl text-purple-200 mb-8">
+                Great job completing the interview simulation. In a real interview, 
+                this would be followed by technical questions specific to the role and company.
               </p>
               
               <div className="grid md:grid-cols-2 gap-6 mb-8">
+                <div className="bg-white/5 rounded-xl p-6">
+                  <h3 className="text-lg font-semibold text-white mb-2">Questions Answered</h3>
+                  <p className="text-3xl font-bold text-purple-300">{Object.keys(answers).length}</p>
+                </div>
+                <div className="bg-white/5 rounded-xl p-6">
+                  <h3 className="text-lg font-semibold text-white mb-2">Time Spent</h3>
+                  <p className="text-3xl font-bold text-purple-300">
+                    {Math.round((Object.keys(answers).length * 3) / 60)} min
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-4 mb-8">
                 <button
-                  onClick={() => navigate('/')}
-                  className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition"
+                  onClick={() => {
+                    setCurrentPhase('intro');
+                    setCurrentQuestionIndex(0);
+                    setAnswers({});
+                    setInterviewStarted(false);
+                    setCurrentAnswer('');
+                  }}
+                  className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors mr-4"
                 >
-                  Back to Home
+                  Take Again
                 </button>
                 <button
-                  onClick={() => window.location.reload()}
-                  className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition"
+                  onClick={() => navigate('/')}
+                  className="bg-white/20 text-white px-6 py-3 rounded-lg hover:bg-white/30 transition-colors"
                 >
-                  Try Again
+                  Back to Home
                 </button>
               </div>
             </div>
@@ -274,69 +292,82 @@ Your production Kubernetes cluster is experiencing issues. Pods are randomly cra
     );
   }
 
+  // Interview questions phase
+  const currentQuestion = getCurrentQuestion();
+  const currentPhaseData = phases[currentPhase];
+  const IconComponent = iconMap[currentPhaseData.icon] || User;
+  const progress = ((currentQuestionIndex + 1) / currentPhaseData.questions.length) * 100;
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-indigo-900">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-pink-900">
       <div className="container mx-auto px-4 py-8">
-        
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <button
-            onClick={() => navigate('/')}
-            className="flex items-center space-x-2 text-blue-400 hover:text-blue-300"
-          >
-            <ArrowLeft className="h-5 w-5" />
-            <span>Exit Interview</span>
-          </button>
+        <div className="max-w-4xl mx-auto">
           
-          <div className="flex items-center space-x-4">
-            <div className={`bg-gradient-to-r ${getPhaseColor(phaseInfo.color)} text-white px-4 py-2 rounded-lg flex items-center space-x-2`}>
-              <phaseInfo.icon className="h-5 w-5" />
-              <span>{phaseInfo.title}</span>
+          {/* Header */}
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center space-x-4">
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                currentPhase === 'personal' ? 'bg-blue-500' :
+                currentPhase === 'technical' ? 'bg-green-500' : 'bg-red-500'
+              }`}>
+                <IconComponent className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-white">{currentPhaseData.title}</h1>
+                <p className="text-purple-200">
+                  Question {currentQuestionIndex + 1} of {currentPhaseData.questions.length}
+                </p>
+              </div>
             </div>
             
-            <div className="bg-white px-4 py-2 rounded-lg flex items-center space-x-2">
-              <Clock className="h-5 w-5 text-gray-600" />
-              <span className="font-mono text-lg">{formatTime(timeRemaining)}</span>
+            <div className="text-right">
+              <div className="text-white font-mono text-2xl mb-1">
+                {formatTime(timeRemaining)}
+              </div>
+              <div className="text-purple-200 text-sm">
+                <Clock className="h-4 w-4 inline mr-1" />
+                Time remaining
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Question */}
-        <div className="max-w-4xl mx-auto">
-          <div className="bg-white rounded-2xl p-8 shadow-2xl">
+          {/* Progress Bar */}
+          <div className="w-full bg-white/20 rounded-full h-2 mb-8">
+            <div 
+              className={`h-2 rounded-full transition-all duration-300 ${
+                currentPhase === 'personal' ? 'bg-blue-500' :
+                currentPhase === 'technical' ? 'bg-green-500' : 'bg-red-500'
+              }`}
+              style={{ width: `${progress}%` }}
+            ></div>
+          </div>
+
+          {/* Question */}
+          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 mb-8">
+            <div className={`inline-block px-3 py-1 rounded-full text-sm font-medium mb-4 ${getPhaseColorClasses(currentPhase)}`}>
+              {currentQuestion?.type}
+            </div>
             
-            <div className="mb-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-2xl font-bold text-gray-900">
-                  Question {currentQuestionIndex + 1}
-                </h2>
-                <div className="text-sm text-gray-500">
-                  Phase {currentPhase === 'personal' ? '1' : currentPhase === 'technical' ? '2' : '3'} of 3
-                </div>
-              </div>
-              
-              <div className="prose max-w-none">
-                <div className="text-lg text-gray-800 whitespace-pre-line">
-                  {currentQuestion?.question}
-                </div>
-              </div>
-            </div>
-
-            {/* Answer Area */}
-            <div className="mb-6">
-              <textarea
-                placeholder="Type your answer here... Be specific and provide examples where possible."
-                rows={8}
-                className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                onChange={(e) => handleAnswer(e.target.value)}
-              />
-            </div>
+            <h2 className="text-xl font-semibold text-white mb-6 leading-relaxed">
+              {currentQuestion?.question.split('\n').map((line, index) => (
+                <span key={index}>
+                  {line.startsWith('**') && line.endsWith('**') ? (
+                    <strong>{line.slice(2, -2)}</strong>
+                  ) : line.startsWith('- ') ? (
+                    <span className="block ml-4">• {line.slice(2)}</span>
+                  ) : (
+                    line
+                  )}
+                  {index < currentQuestion.question.split('\n').length - 1 && <br />}
+                </span>
+              ))}
+            </h2>
 
             {/* Hints for scenario questions */}
             {currentQuestion?.hints && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                <h4 className="font-semibold text-blue-900 mb-2">💡 Hints:</h4>
-                <ul className="text-blue-800 text-sm space-y-1">
+              <div className="bg-white/5 rounded-lg p-4 mb-6">
+                <h3 className="text-sm font-semibold text-purple-200 mb-2">Hints:</h3>
+                <ul className="text-purple-300 text-sm space-y-1">
                   {currentQuestion.hints.map((hint, index) => (
                     <li key={index}>• {hint}</li>
                   ))}
@@ -344,16 +375,54 @@ Your production Kubernetes cluster is experiencing issues. Pods are randomly cra
               </div>
             )}
 
-            {/* Next Button */}
-            <div className="flex justify-end">
+            {/* Answer Input */}
+            <div className="mb-6">
+              <textarea
+                value={currentAnswer}
+                onChange={(e) => setCurrentAnswer(e.target.value)}
+                placeholder="Type your answer here... In a real interview, you would speak this out loud."
+                className="w-full h-32 p-4 bg-white/10 border border-white/20 rounded-lg text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+              />
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex justify-between items-center">
+              <div className="text-purple-300 text-sm">
+                {currentAnswer.length > 0 ? `${currentAnswer.length} characters` : 'Start typing your response...'}
+              </div>
+              
               <button
-                onClick={nextQuestion}
-                className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition duration-200 flex items-center space-x-2"
+                onClick={handleNextQuestion}
+                className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200 flex items-center space-x-2"
               >
-                <span>Next Question</span>
-                <ArrowRight className="h-5 w-5" />
+                <span>
+                  {currentQuestionIndex + 1 === currentPhaseData.questions.length
+                    ? (currentPhase === 'scenario' ? 'Complete Interview' : 'Next Phase')
+                    : 'Next Question'
+                  }
+                </span>
+                <ArrowRight className="h-4 w-4" />
               </button>
             </div>
+          </div>
+
+          {/* Phase Navigation */}
+          <div className="flex justify-center space-x-4">
+            {Object.entries(phases).map(([key, phase]) => {
+              const IconComp = iconMap[phase.icon] || User;
+              const isActive = key === currentPhase;
+              const isCompleted = Object.keys(phases).indexOf(key) < Object.keys(phases).indexOf(currentPhase);
+              
+              return (
+                <div key={key} className={`flex items-center space-x-2 px-4 py-2 rounded-lg ${
+                  isActive ? 'bg-white/20 text-white' :
+                  isCompleted ? 'bg-white/10 text-purple-200' : 'text-purple-400'
+                }`}>
+                  <IconComp className="h-4 w-4" />
+                  <span className="text-sm font-medium">{phase.title}</span>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>

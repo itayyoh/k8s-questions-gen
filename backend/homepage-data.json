@@ -1,0 +1,23 @@
+{
+  "features": {
+    "quiz": [
+      { "icon": "Target", "text": "Practice by Category" },
+      { "icon": "Code", "text": "Real K8s Questions" },
+      { "icon": "Zap", "text": "Instant Feedback" }
+    ],
+    "interview": [
+      { "icon": "Users", "text": "Realistic Interview Flow" },
+      { "icon": "Clock", "text": "Timed Questions" },
+      { "icon": "Code", "text": "Debug Scenarios" }
+    ]
+  },
+  "stats": [
+    { "value": "500+", "label": "Questions" },
+    { "value": "15+", "label": "Scenarios" },
+    { "value": "98%", "label": "Success Rate" }
+  ],
+  "metadata": {
+    "title": "DevOps Interview Platform",
+    "subtitle": "Master DevOps interviews with realistic simulations, Kubernetes practice, and real-world debugging scenarios. Land your dream DevOps role."
+  }
+}

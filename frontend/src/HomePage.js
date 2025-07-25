@@ -1,21 +1,34 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BookOpen, Users, Code, Zap, ArrowRight, Clock, Target } from 'lucide-react';
+import { loadHomepageData } from './utils/dataLoader';
 
 const HomePage = () => {
   const navigate = useNavigate();
+  const [homepageData, setHomepageData] = useState(null);
 
-  const features = {
-    quiz: [
-      { icon: Target, text: "Practice by Category" },
-      { icon: Code, text: "Real K8s Questions" },
-      { icon: Zap, text: "Instant Feedback" }
-    ],
-    interview: [
-      { icon: Users, text: "Realistic Interview Flow" },
-      { icon: Clock, text: "Timed Questions" },
-      { icon: Code, text: "Debug Scenarios" }
-    ]
+  useEffect(() => {
+    const loadData = async () => {
+      const data = await loadHomepageData();
+      setHomepageData(data);
+    };
+    loadData();
+  }, []);
+
+  const iconMap = {
+    Target,
+    Code,
+    Zap,
+    Users,
+    Clock,
+    BookOpen
   };
+
+  if (!homepageData) {
+    return <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex items-center justify-center">
+      <div className="text-white">Loading...</div>
+    </div>;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
@@ -28,12 +41,11 @@ const HomePage = () => {
               <BookOpen className="h-12 w-12 text-white" />
             </div>
             <h1 className="text-5xl font-bold text-white">
-              DevOps Interview Platform
+              {homepageData.metadata.title}
             </h1>
           </div>
           <p className="text-xl text-blue-200 max-w-2xl mx-auto">
-            Master DevOps interviews with realistic simulations, Kubernetes practice, 
-            and real-world debugging scenarios. Land your dream DevOps role.
+            {homepageData.metadata.subtitle}
           </p>
         </div>
 
@@ -58,12 +70,15 @@ const HomePage = () => {
               </div>
 
               <div className="space-y-3 mb-8">
-                {features.quiz.map((feature, index) => (
-                  <div key={index} className="flex items-center space-x-3">
-                    <feature.icon className="h-5 w-5 text-blue-600" />
-                    <span className="text-gray-700">{feature.text}</span>
-                  </div>
-                ))}
+                {homepageData.features.quiz.map((feature, index) => {
+                  const IconComponent = iconMap[feature.icon] || Target;
+                  return (
+                    <div key={index} className="flex items-center space-x-3">
+                      <IconComponent className="h-5 w-5 text-blue-600" />
+                      <span className="text-gray-700">{feature.text}</span>
+                    </div>
+                  );
+                })}
               </div>
 
               <button
@@ -94,12 +109,15 @@ const HomePage = () => {
               </div>
 
               <div className="space-y-3 mb-8">
-                {features.interview.map((feature, index) => (
-                  <div key={index} className="flex items-center space-x-3">
-                    <feature.icon className="h-5 w-5 text-purple-600" />
-                    <span className="text-gray-700">{feature.text}</span>
-                  </div>
-                ))}
+                {homepageData.features.interview.map((feature, index) => {
+                  const IconComponent = iconMap[feature.icon] || Users;
+                  return (
+                    <div key={index} className="flex items-center space-x-3">
+                      <IconComponent className="h-5 w-5 text-purple-600" />
+                      <span className="text-gray-700">{feature.text}</span>
+                    </div>
+                  );
+                })}
               </div>
 
               <button
@@ -115,18 +133,12 @@ const HomePage = () => {
 
         {/* Stats Section */}
         <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-          <div className="text-center">
-            <div className="text-3xl font-bold text-white mb-2">500+</div>
-            <div className="text-blue-200">Questions</div>
-          </div>
-          <div className="text-center">
-            <div className="text-3xl font-bold text-white mb-2">15+</div>
-            <div className="text-blue-200">Scenarios</div>
-          </div>
-          <div className="text-center">
-            <div className="text-3xl font-bold text-white mb-2">98%</div>
-            <div className="text-blue-200">Success Rate</div>
-          </div>
+          {homepageData.stats.map((stat, index) => (
+            <div key={index} className="text-center">
+              <div className="text-3xl font-bold text-white mb-2">{stat.value}</div>
+              <div className="text-blue-200">{stat.label}</div>
+            </div>
+          ))}
         </div>
       </div>
     </div>
