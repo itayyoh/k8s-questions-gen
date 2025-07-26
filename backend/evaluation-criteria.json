@@ -1,0 +1,67 @@
+{
+  "interviewEvaluation": {
+    "personal": {
+      "criteria": [
+        {
+          "name": "Communication",
+          "weight": 40,
+          "description": "Clear and concise explanation of background and experience"
+        },
+        {
+          "name": "Passion",
+          "weight": 30,
+          "description": "Genuine interest in DevOps and technology"
+        },
+        {
+          "name": "Experience Relevance",
+          "weight": 30,
+          "description": "Relevant experience and project examples"
+        }
+      ]
+    },
+    "technical": {
+      "criteria": [
+        {
+          "name": "Technical Accuracy",
+          "weight": 50,
+          "description": "Correct understanding of concepts and technologies"
+        },
+        {
+          "name": "Depth of Knowledge",
+          "weight": 30,
+          "description": "Ability to explain technical details and nuances"
+        },
+        {
+          "name": "Best Practices",
+          "weight": 20,
+          "description": "Understanding of industry best practices"
+        }
+      ]
+    },
+    "scenario": {
+      "criteria": [
+        {
+          "name": "Problem-Solving Approach",
+          "weight": 40,
+          "description": "Systematic and logical approach to debugging"
+        },
+        {
+          "name": "Tool Knowledge",
+          "weight": 30,
+          "description": "Knowledge of relevant commands and tools"
+        },
+        {
+          "name": "Critical Thinking",
+          "weight": 30,
+          "description": "Ability to analyze and prioritize issues"
+        }
+      ]
+    }
+  },
+  "scoringRubric": {
+    "excellent": { "min": 90, "max": 100, "description": "Outstanding performance" },
+    "good": { "min": 75, "max": 89, "description": "Strong performance with minor gaps" },
+    "satisfactory": { "min": 60, "max": 74, "description": "Adequate performance with some improvements needed" },
+    "needsImprovement": { "min": 0, "max": 59, "description": "Requires significant improvement" }
+  }
+}
