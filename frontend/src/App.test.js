@@ -1,8 +1,8 @@
 import { render, screen } from '@testing-library/react';
-import App from './KubernetesQuiz';
+import App from './App';
 
 test('renders kubernetes interview prep', () => {
   render(<App />);
-  const linkElement = screen.getByText(/kubernetes interview prep/i);
+  const linkElement = screen.getByText(/start practicing/i);
   expect(linkElement).toBeInTheDocument();
 });
