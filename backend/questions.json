@@ -222,5 +222,103 @@
     "category": "Architecture",
     "difficulty": "Medium",
     "type": "open-ended"
+  },
+  {
+    "question": "If you have a new microservice to run in Kubernetes, what resources do you usually set up?",
+    "answer": "To deploy a new microservice in Kubernetes, you typically set up a Deployment to manage Pod replicas, a Service to enable communication, and optionally an Ingress for external access. You may also configure ConfigMaps or Secrets for configuration data, and define resource limits/requests to ensure proper resource allocation.",
+    "category": "Deployment",
+    "difficulty": "Medium",
+    "type": "open-ended"
+  },
+  {
+    "question": "What does a Service do in Kubernetes, and how is it different from an Ingress?",
+    "answer": "A Service provides a stable IP and DNS name for accessing Pods within a cluster, enabling load balancing across them. An Ingress, however, manages external HTTP/HTTPS traffic, routing it to Services based on rules like domain or path, often requiring an Ingress Controller.",
+    "category": "Networking",
+    "difficulty": "Medium",
+    "type": "open-ended"
+  },
+  {
+    "question": "How do CRDs (Custom Resource Definitions) and Operators help you extend Kubernetes beyond its default features?",
+    "answer": "CRDs allow you to define custom resources, extending Kubernetes' API to manage new object types. Operators use CRDs with custom controllers to automate complex tasks, like managing stateful applications or custom workflows, by codifying operational knowledge.",
+    "category": "Extensibility",
+    "difficulty": "Hard",
+    "type": "open-ended"
+  },
+  {
+    "question": "Your app keeps crashing after a few minutes in Kubernetes. How would you check what’s going on?",
+    "answer": "To troubleshoot, check Pod logs using `kubectl logs <pod-name>`, describe the Pod with `kubectl describe pod <pod-name>` to see events, and inspect container resource usage with `kubectl top pod`. You can also use `kubectl exec` to debug inside the container or check cluster events with `kubectl get events`.",
+    "category": "Troubleshooting",
+    "difficulty": "Medium",
+    "type": "open-ended"
+  },
+  {
+    "question": "Sometimes a pod or other resource is stuck 'Terminating' for a long time. Why could that happen, and what might you do?",
+    "answer": "A Pod may be stuck in 'Terminating' due to finalizers, ungraceful container shutdowns, or node issues. To resolve, check for finalizers with `kubectl describe pod`, force delete with `kubectl delete pod <pod-name> --force --grace-period=0`, or troubleshoot the node for connectivity or resource issues.",
+    "category": "Troubleshooting",
+    "difficulty": "Hard",
+    "type": "open-ended"
+  },
+  {
+    "question": "You need to run commands inside a container for debugging. How do you do that in a Kubernetes environment?",
+    "answer": "Use `kubectl exec -it <pod-name> -- /bin/sh` or `/bin/bash` to access a shell inside the container. If the container lacks a shell, specify a command like `kubectl exec -it <pod-name> -- <command>`. For multi-container Pods, use `-c <container-name>`.",
+    "category": "Troubleshooting",
+    "difficulty": "Medium",
+    "type": "open-ended"
+  },
+  {
+    "question": "You spot a small config mistake in a live resource. How would you fix it right away in the cluster? What risks might that cause?",
+    "answer": "Edit the live resource using `kubectl edit <resource-type> <resource-name>`. This modifies the live state but risks drift from declarative configs, potential misconfigurations, or service disruptions if changes are untested. Always validate changes and update source manifests.",
+    "category": "Configuration",
+    "difficulty": "Medium",
+    "type": "open-ended"
+  },
+  {
+    "question": "How do different services within the same cluster talk to each other?",
+    "answer": "Services communicate using their ClusterIP or DNS name (e.g., `<service-name>.<namespace>.svc.cluster.local`). A Service routes traffic to Pods via selectors, with kube-proxy handling load balancing. For secure communication, Network Policies or mTLS can be used.",
+    "category": "Networking",
+    "difficulty": "Medium",
+    "type": "open-ended"
+  },
+  {
+    "question": "What are sidecar containers and init containers, and why might you use them?",
+    "answer": "Sidecar containers run alongside the main container in a Pod, providing auxiliary functions like logging or proxying. Init containers run sequentially before the main container starts, used for setup tasks like initializing configs or waiting for dependencies.",
+    "category": "Pod Management",
+    "difficulty": "Medium",
+    "type": "open-ended"
+  },
+  {
+    "question": "Is there a name length limit or other format rule for K8s resources?",
+    "answer": "Kubernetes resource names are limited to 253 characters for most resources, must be lowercase alphanumeric or hyphens, and cannot start/end with a hyphen. DNS subdomain rules apply for names like Services or Ingresses.",
+    "category": "Configuration",
+    "difficulty": "Easy",
+    "type": "open-ended"
+  },
+  {
+    "question": "You’re running an Azure DevOps agent in Kubernetes, which uses Kaniko to build and push Docker images. It’s failing because it can’t create needed resources. How would you troubleshoot the missing permissions? How can RBAC be configured to give Kaniko the required access?",
+    "answer": "To troubleshoot, check Pod logs with `kubectl logs` and describe the Pod with `kubectl describe pod` to identify permission errors. Verify RBAC with `kubectl get rolebindings,clusterrolebindings -n <namespace>`. For Kaniko, create a Role with permissions for resources like Pods and Secrets, and bind it to the ServiceAccount using a RoleBinding or ClusterRoleBinding.",
+    "category": "RBAC",
+    "difficulty": "Hard",
+    "type": "open-ended"
+  },
+  {
+    "question": "A Kubernetes Pod crashes unexpectedly, and its logs are lost because the container restarts too quickly. How would you recover logs from a previously crashed container? How can you ensure logs are always accessible?",
+    "answer": "To recover logs, use `kubectl logs <pod-name> --previous` if the container is still available. To ensure logs persist, configure a logging sidecar (e.g., Fluentd or Filebeat) or send logs to a centralized system like Elasticsearch or Loki. Adjust restart policies to delay restarts if needed.",
+    "category": "Logging",
+    "difficulty": "Hard",
+    "type": "open-ended"
+  },
+  {
+    "question": "A Kubernetes Pod crashes intermittently and is marked as OOMKilled. How would you identify the cause of the memory spikes? How do you stop the Pod from running out of memory in the future?",
+    "answer": "Identify memory spikes using `kubectl top pod` and monitoring tools like Prometheus. Check logs and describe the Pod for OOM events. To prevent OOMKills, set resource limits/requests in the Pod spec, optimize application memory usage, and scale horizontally if needed.",
+    "category": "Troubleshooting",
+    "difficulty": "Hard",
+    "type": "open-ended"
+  },
+  {
+    "question": "How do you debug issues on a Kubernetes node, such as accessing the node's file system or checking running services?",
+    "answer": "SSH into the node (if permitted) to check the file system or services. Use `kubectl node-shell <node-name>` for a containerized shell if available. Check node status with `kubectl describe node <node-name>` and logs from kubelet or container runtime with `journalctl`.",
+    "category": "Node Management",
+    "difficulty": "Hard",
+    "type": "open-ended"
   }
 ]
