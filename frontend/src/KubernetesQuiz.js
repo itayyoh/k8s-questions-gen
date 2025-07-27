@@ -21,15 +21,6 @@ function KubernetesQuiz() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [showResults, setShowResults] = useState(false);
 
-  useEffect(() => {
-    loadCategories();
-    loadUIConfiguration();
-  }, []);
-
-  const loadUIConfiguration = async () => {
-    const config = await loadUIConfig();
-    setUiConfig(config);
-  };
 
   const loadCategories = async () => {
     try {
@@ -44,6 +35,18 @@ function KubernetesQuiz() {
       }
     }
   };
+
+
+  useEffect(() => {
+    loadCategories();
+    loadUIConfiguration();
+  }, [loadCategories, loadUIConfiguration]);
+
+  const loadUIConfiguration = async () => {
+    const config = await loadUIConfig();
+    setUiConfig(config);
+  };
+
 
   const loadQuestions = async () => {
     setLoading(true);

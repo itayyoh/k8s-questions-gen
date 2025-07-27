@@ -28,6 +28,12 @@ const InterviewSimulation = () => {
     AlertTriangle
   };
 
+  const getCurrentQuestion = useCallback(() => {
+    if (!scenarioData) return null;
+    const phase = scenarioData.phases[currentPhase];
+    return phase?.questions[currentQuestionIndex];
+  }, [scenarioData, currentPhase, currentQuestionIndex]);
+
   // Handle next question logic
   const handleNextQuestion = useCallback(() => {
     if (!scenarioData) return;
@@ -86,11 +92,6 @@ const InterviewSimulation = () => {
     return () => clearInterval(timer);
   }, [interviewStarted, currentPhase, currentQuestionIndex, handleNextQuestion]);
 
-  const getCurrentQuestion = () => {
-    if (!scenarioData) return null;
-    const phase = scenarioData.phases[currentPhase];
-    return phase?.questions[currentQuestionIndex];
-  };
 
   const handleStartInterview = () => {
     if (!scenarioData || !scenarioData.phases || !scenarioData.phases.personal) {
@@ -104,15 +105,6 @@ const InterviewSimulation = () => {
     setTimeRemaining(firstQuestion?.timeLimit || 180);
   };
 
-  const handleSaveAnswer = () => {
-    const question = getCurrentQuestion();
-    if (question) {
-      setAnswers(prev => ({
-        ...prev,
-        [question.id]: currentAnswer
-      }));
-    }
-  };
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
