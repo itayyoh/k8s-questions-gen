@@ -1,6 +1,5 @@
 steps to accomplish
 
-application needs some kind of submission logic and some logic to actually give RIGHT OR WRONG for every question!!
 
 look into syncing some ai agent in to this program (future..)
 
