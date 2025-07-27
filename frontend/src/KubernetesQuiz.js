@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { ChevronDown, ChevronRight, RefreshCw, BookOpen, Target, CheckCircle, XCircle, ArrowLeft, Settings, Award } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -21,8 +21,12 @@ function KubernetesQuiz() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [showResults, setShowResults] = useState(false);
 
+  const loadUIConfiguration = useCallback(async () => {
+    const config = await loadUIConfig();
+    setUiConfig(config);
+  }, []);
 
-  const loadCategories = async () => {
+  const loadCategories = useCallback(async () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/api/categories`);
       setCategories(response.data || []);
@@ -34,19 +38,12 @@ function KubernetesQuiz() {
         setCategories(['Core Concepts', 'Networking', 'Configuration']);
       }
     }
-  };
-
+  }, [uiConfig]);
 
   useEffect(() => {
     loadCategories();
     loadUIConfiguration();
   }, [loadCategories, loadUIConfiguration]);
-
-  const loadUIConfiguration = async () => {
-    const config = await loadUIConfig();
-    setUiConfig(config);
-  };
-
 
   const loadQuestions = async () => {
     setLoading(true);
@@ -145,28 +142,22 @@ function KubernetesQuiz() {
     };
   };
 
-  const getScoreColor = (percentage) => {
-    if (percentage >= 80) return 'text-green-400';
-    if (percentage >= 60) return 'text-yellow-400';
-    return 'text-red-400';
-  };
-
-  // Quiz Setup Screen
   if (!quizStarted) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
         <div className="container mx-auto px-4 py-12">
           <div className="max-w-4xl mx-auto">
             
-            <button
-              onClick={() => navigate('/')}
-              className="flex items-center space-x-2 text-white/80 hover:text-white mb-8 transition-colors"
-            >
-              <ArrowLeft className="h-5 w-5" />
-              <span>Back to Home</span>
-            </button>
-
+            {/* Header */}
             <div className="text-center mb-12">
+              <button
+                onClick={() => navigate('/')}
+                className="inline-flex items-center text-blue-200 hover:text-white mb-8 transition-colors"
+              >
+                <ArrowLeft className="h-5 w-5 mr-2" />
+                Back to Home
+              </button>
+              
               <div className="flex items-center justify-center mb-6">
                 <div className="bg-blue-600 p-4 rounded-full mr-4">
                   <BookOpen className="h-12 w-12 text-white" />
@@ -176,7 +167,7 @@ function KubernetesQuiz() {
                 </h1>
               </div>
               <p className="text-xl text-blue-200 max-w-2xl mx-auto">
-                Test your Kubernetes knowledge with curated questions organized by difficulty and category.
+                Test your Kubernetes knowledge with curated questions organized by difficulty and category. 
                 Perfect for interview preparation and skill assessment.
               </p>
             </div>
@@ -236,33 +227,11 @@ function KubernetesQuiz() {
                     </>
                   ) : (
                     <>
-                      <BookOpen className="h-6 w-6" />
+                      <Target className="h-6 w-6" />
                       <span>Start Quiz</span>
-                      <Target className="h-6 w-6 group-hover:scale-110 transition-transform" />
                     </>
                   )}
                 </button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-white/5 backdrop-blur-lg rounded-xl p-6 border border-white/10">
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-blue-400 mb-2">Interactive</div>
-                  <div className="text-blue-200">Multiple choice & open-ended questions</div>
-                </div>
-              </div>
-              <div className="bg-white/5 backdrop-blur-lg rounded-xl p-6 border border-white/10">
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-purple-400 mb-2">Adaptive</div>
-                  <div className="text-blue-200">Questions from easy to expert level</div>
-                </div>
-              </div>
-              <div className="bg-white/5 backdrop-blur-lg rounded-xl p-6 border border-white/10">
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-indigo-400 mb-2">Instant</div>
-                  <div className="text-blue-200">Immediate feedback & explanations</div>
-                </div>
               </div>
             </div>
           </div>
@@ -271,62 +240,50 @@ function KubernetesQuiz() {
     );
   }
 
-  // Results Screen
   if (showResults) {
     const score = calculateScore();
     
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
         <div className="container mx-auto px-4 py-12">
-          <div className="max-w-4xl mx-auto text-center">
+          <div className="max-w-4xl mx-auto">
             
-            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-12 border border-white/20">
-              <div className="flex items-center justify-center mb-6">
-                <Award className="h-16 w-16 text-yellow-400 mr-4" />
-                <h1 className="text-4xl font-bold text-white">
-                  Quiz Complete! 🎉
-                </h1>
-              </div>
-              
-              <div className="mb-8">
-                <div className={`text-6xl font-bold mb-4 ${getScoreColor(score.percentage)}`}>
-                  {score.percentage}%
+            <div className="text-center mb-12">
+              <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-12 border border-white/20">
+                <div className="flex items-center justify-center mb-6">
+                  <Award className="h-16 w-16 text-yellow-400 mr-4" />
+                  <h1 className="text-4xl font-bold text-white">Quiz Complete!</h1>
                 </div>
-                <p className="text-xl text-blue-200">
-                  You got {score.correct} out of {score.total} questions correct
-                </p>
-              </div>
-              
-              <div className="grid md:grid-cols-3 gap-6 mb-8">
-                <div className="bg-white/5 rounded-xl p-6">
-                  <h3 className="text-lg font-semibold text-white mb-2">Questions</h3>
-                  <p className="text-3xl font-bold text-blue-300">{score.total}</p>
+                
+                <div className="grid md:grid-cols-3 gap-6 mb-8">
+                  <div className="bg-white/5 rounded-xl p-6">
+                    <div className="text-3xl font-bold text-green-400 mb-2">{score.correct}</div>
+                    <div className="text-white">Correct</div>
+                  </div>
+                  <div className="bg-white/5 rounded-xl p-6">
+                    <div className="text-3xl font-bold text-red-400 mb-2">{score.total - score.correct}</div>
+                    <div className="text-white">Incorrect</div>
+                  </div>
+                  <div className="bg-white/5 rounded-xl p-6">
+                    <div className="text-3xl font-bold text-blue-400 mb-2">{score.percentage}%</div>
+                    <div className="text-white">Score</div>
+                  </div>
                 </div>
-                <div className="bg-white/5 rounded-xl p-6">
-                  <h3 className="text-lg font-semibold text-white mb-2">Correct</h3>
-                  <p className="text-3xl font-bold text-green-400">{score.correct}</p>
-                </div>
-                <div className="bg-white/5 rounded-xl p-6">
-                  <h3 className="text-lg font-semibold text-white mb-2">Category</h3>
-                  <p className="text-lg font-medium text-purple-300">
-                    {selectedCategory === 'all' ? 'Mixed' : selectedCategory}
-                  </p>
-                </div>
-              </div>
 
-              <div className="space-y-4">
-                <button
-                  onClick={resetQuiz}
-                  className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors mr-4"
-                >
-                  Take Another Quiz
-                </button>
-                <button
-                  onClick={() => navigate('/')}
-                  className="bg-white/20 text-white px-8 py-3 rounded-lg hover:bg-white/30 transition-colors"
-                >
-                  Back to Home
-                </button>
+                <div className="space-x-4">
+                  <button
+                    onClick={resetQuiz}
+                    className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Take Another Quiz
+                  </button>
+                  <button
+                    onClick={() => navigate('/')}
+                    className="bg-white/20 text-white px-6 py-3 rounded-lg hover:bg-white/30 transition-colors"
+                  >
+                    Back to Home
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -335,9 +292,15 @@ function KubernetesQuiz() {
     );
   }
 
-  // Quiz Question Screen
+  if (questions.length === 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex items-center justify-center">
+        <div className="text-white">Loading questions...</div>
+      </div>
+    );
+  }
+
   const currentQuestion = questions[currentQuestionIndex];
-  const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
@@ -347,46 +310,48 @@ function KubernetesQuiz() {
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center">
+              <button
+                onClick={() => navigate('/')}
+                className="flex items-center text-blue-200 hover:text-white transition-colors"
+              >
+                <ArrowLeft className="h-5 w-5 mr-2" />
+                Home
+              </button>
+              <div className="bg-blue-600 p-3 rounded-full">
                 <BookOpen className="h-6 w-6 text-white" />
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-white">Kubernetes Quiz</h1>
-                <p className="text-blue-200">
-                  Question {currentQuestionIndex + 1} of {questions.length}
-                </p>
+                <p className="text-blue-200">Question Mode</p>
               </div>
             </div>
             
             <button
               onClick={resetQuiz}
-              className="text-white/80 hover:text-white transition-colors"
+              className="flex items-center space-x-2 px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-colors"
             >
-              <ArrowLeft className="h-6 w-6" />
+              <Settings className="h-4 w-4" />
+              <span>New Quiz</span>
             </button>
           </div>
 
           {/* Progress Bar */}
-          <div className="w-full bg-white/20 rounded-full h-3 mb-8">
+          <div className="w-full bg-white/20 rounded-full h-2 mb-8">
             <div 
-              className="h-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full transition-all duration-300"
-              style={{ width: `${progress}%` }}
+              className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-300"
+              style={{ width: `${((currentQuestionIndex + 1) / questions.length) * 100}%` }}
             ></div>
           </div>
 
           {/* Question */}
           <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 mb-8">
-            <div className="flex items-center space-x-3 mb-6">
-              <span className={`px-3 py-1 rounded-full text-sm font-medium ${getQuestionCategoryColor(currentQuestion.category)} bg-opacity-20`}>
+            <div className="flex flex-wrap gap-2 mb-6">
+              <span className={`px-3 py-1 rounded-full text-sm font-medium ${getQuestionCategoryColor(currentQuestion.category)}`}>
                 {currentQuestion.category}
               </span>
-              <span className={`px-3 py-1 rounded-full text-sm font-medium ${getQuestionDifficultyColor(currentQuestion.difficulty)} bg-opacity-20`}>
+              <span className={`px-3 py-1 rounded-full text-sm font-medium ${getQuestionDifficultyColor(currentQuestion.difficulty)}`}>
                 {currentQuestion.difficulty}
               </span>
-              <div className="flex items-center space-x-1 text-blue-300">
-                <Target className="h-4 w-4" />
-                <span className="text-sm capitalize">{currentQuestion.type?.replace('-', ' ')}</span>
-              </div>
             </div>
             
             <h2 className="text-xl font-semibold text-white mb-6 leading-relaxed">
@@ -394,22 +359,12 @@ function KubernetesQuiz() {
             </h2>
 
             {/* Multiple Choice Options */}
-            {currentQuestion.type === 'multiple-choice' && currentQuestion.options && (
+            {currentQuestion.type === 'multiple_choice' && currentQuestion.options && (
               <div className="space-y-3 mb-6">
-                {currentQuestion.options.map((option, optIndex) => (
-                  <label 
-                    key={optIndex} 
-                    className={`flex items-center space-x-3 p-4 rounded-lg border cursor-pointer transition-colors ${
-                      submissions[currentQuestion.id] 
-                        ? (option === currentQuestion.answer 
-                          ? 'border-green-500 bg-green-500/20' 
-                          : (selectedAnswers[currentQuestion.id] === option && !submissions[currentQuestion.id]?.correct)
-                            ? 'border-red-500 bg-red-500/20'
-                            : 'border-white/20 bg-white/5')
-                        : (selectedAnswers[currentQuestion.id] === option 
-                          ? 'border-blue-500 bg-blue-500/20' 
-                          : 'border-white/20 bg-white/5 hover:border-white/40')
-                    }`}
+                {currentQuestion.options.map((option, index) => (
+                  <label
+                    key={index}
+                    className="flex items-center space-x-3 p-4 bg-white/5 rounded-lg cursor-pointer hover:bg-white/10 transition-colors"
                   >
                     <input
                       type="radio"
@@ -417,53 +372,30 @@ function KubernetesQuiz() {
                       value={option}
                       checked={selectedAnswers[currentQuestion.id] === option}
                       onChange={() => handleAnswerSelect(currentQuestion.id, option)}
-                      disabled={!!submissions[currentQuestion.id]}
-                      className="text-blue-500 bg-transparent border-white/30 focus:ring-blue-500"
+                      className="text-blue-500 focus:ring-blue-500"
                     />
                     <span className="text-white">{option}</span>
                   </label>
                 ))}
-                
-                {selectedAnswers[currentQuestion.id] && !submissions[currentQuestion.id] && (
-                  <button
-                    onClick={() => submitAnswer(currentQuestion.id, selectedAnswers[currentQuestion.id], currentQuestion.type)}
-                    className="mt-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200"
-                  >
-                    Submit Answer
-                  </button>
-                )}
               </div>
             )}
 
-            {/* Open-ended questions */}
-            {currentQuestion.type === 'open-ended' && (
-              <div className="mb-6">
-                <textarea
-                  value={selectedAnswers[currentQuestion.id] || ''}
-                  onChange={(e) => handleAnswerSelect(currentQuestion.id, e.target.value)}
-                  disabled={!!submissions[currentQuestion.id]}
-                  placeholder="Type your answer here..."
-                  className="w-full p-4 bg-white/10 border border-white/20 rounded-lg text-white placeholder-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none disabled:bg-white/5"
-                  rows={4}
-                />
-                
-                {selectedAnswers[currentQuestion.id] && !submissions[currentQuestion.id] && (
-                  <button
-                    onClick={() => submitAnswer(currentQuestion.id, selectedAnswers[currentQuestion.id], currentQuestion.type)}
-                    className="mt-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200"
-                  >
-                    Submit Answer
-                  </button>
-                )}
-              </div>
+            {/* Submit Button */}
+            {selectedAnswers[currentQuestion.id] && !submissions[currentQuestion.id] && (
+              <button
+                onClick={() => submitAnswer(currentQuestion.id, selectedAnswers[currentQuestion.id], currentQuestion.type)}
+                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors mb-6"
+              >
+                Submit Answer
+              </button>
             )}
 
-            {/* Submission Result */}
+            {/* Show Result */}
             {submissions[currentQuestion.id] && (
-              <div className={`p-4 rounded-lg border mb-6 ${
+              <div className={`p-4 rounded-lg mb-6 ${
                 submissions[currentQuestion.id].correct 
-                  ? 'border-green-500 bg-green-500/20' 
-                  : 'border-red-500 bg-red-500/20'
+                  ? 'bg-green-500/20 border border-green-500/50' 
+                  : 'bg-red-500/20 border border-red-500/50'
               }`}>
                 <div className="flex items-center space-x-2 mb-2">
                   {submissions[currentQuestion.id].correct ? (
@@ -477,23 +409,18 @@ function KubernetesQuiz() {
                     {submissions[currentQuestion.id].correct ? 'Correct!' : 'Incorrect'}
                   </span>
                 </div>
-                <p className={`text-sm ${
-                  submissions[currentQuestion.id].correct ? 'text-green-300' : 'text-red-300'
-                }`}>
-                  {submissions[currentQuestion.id].explanation}
-                </p>
                 {!submissions[currentQuestion.id].correct && (
-                  <p className="text-sm text-blue-200 mt-2">
-                    <strong>Correct answer:</strong> {submissions[currentQuestion.id].correct_answer}
+                  <p className="text-red-200">
+                    Correct answer: {currentQuestion.correct_answer}
                   </p>
                 )}
               </div>
             )}
 
-            {/* Show Answer Toggle */}
+            {/* Show Answer Button */}
             <button
               onClick={() => toggleAnswer(currentQuestion.id)}
-              className="flex items-center space-x-2 text-blue-400 hover:text-blue-300 font-medium transition-colors mb-6"
+              className="flex items-center space-x-2 text-blue-300 hover:text-blue-100 transition-colors mb-6"
             >
               {showAnswers[currentQuestion.id] ? (
                 <>

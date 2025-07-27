@@ -28,6 +28,7 @@ const InterviewSimulation = () => {
     AlertTriangle
   };
 
+  // Define getCurrentQuestion with useCallback
   const getCurrentQuestion = useCallback(() => {
     if (!scenarioData) return null;
     const phase = scenarioData.phases[currentPhase];
@@ -72,7 +73,7 @@ const InterviewSimulation = () => {
         setCurrentPhase('results');
       }
     }
-  }, [scenarioData, currentPhase, currentQuestionIndex, currentAnswer]);
+  }, [scenarioData, currentPhase, currentQuestionIndex, currentAnswer, getCurrentQuestion]);
 
   // Timer effect
   useEffect(() => {
@@ -92,7 +93,6 @@ const InterviewSimulation = () => {
     return () => clearInterval(timer);
   }, [interviewStarted, currentPhase, currentQuestionIndex, handleNextQuestion]);
 
-
   const handleStartInterview = () => {
     if (!scenarioData || !scenarioData.phases || !scenarioData.phases.personal) {
       console.error('Interview scenarios not loaded properly');
@@ -104,7 +104,6 @@ const InterviewSimulation = () => {
     const firstQuestion = scenarioData.phases.personal.questions[0];
     setTimeRemaining(firstQuestion?.timeLimit || 180);
   };
-
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -132,48 +131,33 @@ const InterviewSimulation = () => {
 
   const phases = scenarioData.phases;
 
-  // Additional safety check
-  if (!phases.personal || !phases.technical || !phases.scenario) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-pink-900 flex items-center justify-center">
-        <div className="text-white text-center">
-          <p>Unable to load interview scenarios.</p>
-          <button
-            onClick={() => navigate('/')}
-            className="mt-4 bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition-colors"
-          >
-            Back to Home
-          </button>
-        </div>
-      </div>
-    );
-  }
-
+  // Introduction phase
   if (currentPhase === 'intro') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-pink-900">
         <div className="container mx-auto px-4 py-12">
           <div className="max-w-4xl mx-auto">
             
-            <button
-              onClick={() => navigate('/')}
-              className="flex items-center space-x-2 text-white/80 hover:text-white mb-8 transition-colors"
-            >
-              <ArrowLeft className="h-5 w-5" />
-              <span>Back to Home</span>
-            </button>
-
+            {/* Header */}
             <div className="text-center mb-12">
-              <h1 className="text-5xl font-bold text-white mb-4">
+              <button
+                onClick={() => navigate('/')}
+                className="inline-flex items-center text-purple-200 hover:text-white mb-8 transition-colors"
+              >
+                <ArrowLeft className="h-5 w-5 mr-2" />
+                Back to Home
+              </button>
+              
+              <h1 className="text-5xl font-bold text-white mb-6">
                 DevOps Interview Simulation
               </h1>
               <p className="text-xl text-purple-200 max-w-2xl mx-auto">
-                Experience a realistic DevOps interview with three phases: personal questions, 
-                technical knowledge, and hands-on problem solving.
+                Practice real interview scenarios with timed questions across multiple phases
               </p>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-8 mb-12">
+            {/* Interview Phases Preview */}
+            <div className="grid md:grid-cols-3 gap-6 mb-12">
               {Object.entries(phases).map(([key, phase]) => {
                 const IconComponent = iconMap[phase.icon] || User;
                 
