@@ -263,6 +263,90 @@ func containsKeywords(userAnswer, CorrectAnswer string) bool {
 	return strings.Contains(userLower, correctLower) || strings.Contains(correctLower, userLower)
 }
 
+func addQuestion(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	var newQuestion Question
+	err := json.NewDecoder(r.Body).Decode(&newQuestion)
+	if err != nil {
+		http.Error(w, "Invalid JSON format", http.StatusBadRequest)
+		return
+	}
+
+	if strings.TrimSpace(newQuestion.Question) == "" {
+		http.Error(w, "Question field is required", http.StatusBadRequest)
+		return
+	}
+	if strings.TrimSpace(newQuestion.Category) == "" {
+		http.Error(w, "Category required", http.StatusBadRequest)
+		return
+	}
+	if strings.TrimSpace(newQuestion.Answer) == "" {
+		http.Error(w, "Answer field required", http.StatusBadRequest)
+		return
+	}
+
+	if newQuestion.Type != "open-ended" && newQuestion.Type != "multiple-choice" {
+		http.Error(w, "Type must be either 'open-ended' or 'multiple-choice'", http.StatusBadRequest)
+		return
+	}
+
+	if newQuestion.Type == "multiple-choice" {
+		if len(newQuestion.Options) < 2 {
+			http.Error(w, "Multiple choice questions must have at least 2 options", http.StatusBadRequest)
+			return
+		}
+	}
+
+	answerFound := false
+	for _, option := range newQuestion.Options {
+		if strings.TrimSpace(option) == strings.TrimSpace(newQuestion.Answer) {
+			answerFound = true
+			break
+		}
+	}
+	if !answerFound {
+		http.Error(w, "Answer must be one of the provided options", http.StatusBadRequest)
+		return
+	}
+
+	if newQuestion.Difficulty == "" {
+		newQuestion.Difficulty = "Easy"
+	}
+
+	validDifficulties := []string{"Easy", "Medium", "Hard"}
+	validDifficulty := false
+	for _, diff := range validDifficulties {
+		if newQuestion.Difficulty == diff {
+			validDifficulty = true
+			break
+		}
+	}
+	if !validDifficulty {
+		http.Error(w, "Difficulty must be between Easy,Medium,Hard!!", http.StatusBadRequest)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	result, err := questionsCollection.InsertOne(ctx, newQuestion)
+	if err != nil {
+		log.Printf("Error inserting question: %v", err)
+		http.Error(w, "Failed to save question to db", http.StatusInternalServerError)
+		return
+	}
+
+	newQuestion.ID = result.InsertedID.(primitive.ObjectID)
+
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message":  "questions added",
+		"question": newQuestion,
+		"id":       newQuestion.ID.Hex(),
+	})
+}
+
 func main() {
 	// Connect to database first
 	connectDB()
@@ -281,6 +365,7 @@ func main() {
 	r.HandleFunc("/api/questions/category/{category}", getQuestionsByCategory).Methods("GET")
 	r.HandleFunc("/api/categories", getCategories).Methods("GET")
 	r.HandleFunc("/api/submit", submitAnswer).Methods("POST")
+	r.HandleFunc("/api/questions", addQuestion).Methods("POST")
 
 	// New JSON data endpoints (serve static JSON files)
 	r.HandleFunc("/api/ui-config", serveJSONFile("ui-config.json")).Methods("GET")
