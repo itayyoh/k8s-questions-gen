@@ -296,18 +296,18 @@ func addQuestion(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Multiple choice questions must have at least 2 options", http.StatusBadRequest)
 			return
 		}
-	}
 
-	answerFound := false
-	for _, option := range newQuestion.Options {
-		if strings.TrimSpace(option) == strings.TrimSpace(newQuestion.Answer) {
-			answerFound = true
-			break
+		answerFound := false
+		for _, option := range newQuestion.Options {
+			if strings.TrimSpace(option) == strings.TrimSpace(newQuestion.Answer) {
+				answerFound = true
+				break
+			}
 		}
-	}
-	if !answerFound {
-		http.Error(w, "Answer must be one of the provided options", http.StatusBadRequest)
-		return
+		if !answerFound {
+			http.Error(w, "Answer must be one of the provided options", http.StatusBadRequest)
+			return
+		}
 	}
 
 	if newQuestion.Difficulty == "" {
