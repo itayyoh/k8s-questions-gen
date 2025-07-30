@@ -42,8 +42,19 @@ type SubmissionResponse struct {
 	Score         int    `json:"score,omitempty"`
 }
 
+type JobApplication struct {
+	ID          primitive.ObjectID
+	Company     string
+	Statuss     string
+	Location    string
+	AppliedDate string
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+}
+
 var mongoClient *mongo.Client
 var questionsCollection *mongo.Collection
+var JobApplicationCollection *mongo.Collection
 
 func connectDB() {
 	// Get MongoDB URL from environment variable (set in docker-compose)
