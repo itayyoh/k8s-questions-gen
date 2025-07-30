@@ -45,7 +45,7 @@ type SubmissionResponse struct {
 type JobApplication struct {
 	ID          primitive.ObjectID
 	Company     string
-	Statuss     string
+	Status     string
 	Location    string
 	AppliedDate string
 	CreatedAt   time.Time
@@ -85,7 +85,9 @@ func connectDB() {
 	mongoClient = client
 	questionsCollection = client.Database("k8s_interview").Collection("questions")
 
-	// Seed initial data if collection is empty
+	// Seed initial dient
+var questionsCollection *mongo.Collection
+var JobApplicationCollection $ata if collection is empty
 	seedData()
 }
 
@@ -355,6 +357,123 @@ func addQuestion(w http.ResponseWriter, r *http.Request) {
 		"message":  "questions added",
 		"question": newQuestion,
 		"id":       newQuestion.ID.Hex(),
+	})
+}
+
+func getJobApplication(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	ctx := context.Background()
+
+	opts := options.Find().SetSort(bson.D{{"appliedDate", -1}})
+	cursor, err := JobApplicationCollection.Find(ctx, bson.D{}, opts)
+	if err != nil {
+		log.Printf("Error finding job applications: %v", err)
+		http.Error(w, "Failed to fetch applications", http.StatusInternalServerError)
+		return
+	}
+	defer cursor.Close(ctx)
+
+	var applications []JobApplication
+	if err = cursor.All(ctx, &applications); err != nil {
+		log.Printf("Error decoding job applciations: %v", err)
+		http.Error(w, "Failed to decode applications", http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(applications)
+}
+
+func createJobApplication(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	var newApplication JobApplication
+	if err := json.NewDecoder(r.Body).Decode(&newApplication); err != nil {
+		log.Printf("Error decoding request body: %v", err)
+		http.Error(w, "Invalid", http.StatusBadRequest)
+		return
+	}
+
+	if newApplication.Company == "" || newApplication.AppliedDate == "" {
+		http.Error(w, "Company and Date Required!!", http.StatusBadRequest)
+		return
+	}
+
+	if newApplication.Status == "" {
+		newApplication.Status == "applied"
+	}
+
+	now := time.Now()
+	newApplication.CreatedAt = now
+	newApplication.UpdatedAt = now
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	result, err := JobApplicationCollection.InsertOne(ctx, newApplication)
+	if err != nil {
+		log.Printf("Error inserting application to DB: %v", err)
+		http.Error(w, "Failed to save applications!", http.StatusInternalServerError)
+		return
+	}
+
+	newApplication.ID = result.InsertedID.(primitive.ObjectID)
+
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message": "Application created!",
+		"application": newApplication,
+		"id": newApplication.ID.Hex()
+	})
+}
+
+
+func updateJobApplication(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	vars := mux.Vars(r)
+	idStr := vars["id"]
+
+	objectID, err := primitive.ObjectIDFromHex(idStr)
+	if err != nil {
+		http.Error(w, "Invalid application id!", http.StatusBadRequest)
+		return
+	}
+
+	var updateData JobApplication
+	if err := json.NewDecoder(r.Body).Decode(&updateData); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	updateData.UpdatedAt = time.Now()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	filter := bson.M{"_id": objectID}
+	update := bson.M{"$set": bson.M{
+		"company" : updateData.Company,
+		"appliedDate" : updateData.AppliedDate,
+		"status": updateData.Status,
+		"location": updateData.Location,
+		"updatedAt": updateData.UpdatedAt,
+	}}
+
+	result, err := JobApplicationCollection.UpdateOne(ctx, filter , update)
+	if err != nil {
+		logPrintf("Error updating job application: %v", err)
+		http.Error(w, "Failed to update application", http.StatusInternalServerError)
+		return
+	}
+
+	if result.MatchedCount == 0 {
+		http.Error(w, "Application not found!", http.StatusNotFound)
+		return
+	}
+
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message": "Application updated successfully!",
 	})
 }
 
