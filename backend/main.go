@@ -42,8 +42,19 @@ type SubmissionResponse struct {
 	Score         int    `json:"score,omitempty"`
 }
 
+type JobApplication struct {
+	ID          primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	Company     string             `json:"company" bson:"company"`
+	Status      string             `json:"status" bson:"status"`
+	Location    string             `json:"location" bson:"location"`
+	AppliedDate string             `json:"appliedDate" bson:"appliedDate"`
+	CreatedAt   time.Time          `json:"createdAt" bson:"createdAt"`
+	UpdatedAt   time.Time          `json:"updatedAt" bson:"updatedAt"`
+}
+
 var mongoClient *mongo.Client
 var questionsCollection *mongo.Collection
+var JobApplicationCollection *mongo.Collection
 
 func connectDB() {
 	// Get MongoDB URL from environment variable (set in docker-compose)
@@ -73,8 +84,8 @@ func connectDB() {
 	// Set global variables
 	mongoClient = client
 	questionsCollection = client.Database("k8s_interview").Collection("questions")
+	JobApplicationCollection = client.Database("k8s_interview").Collection("job_applications")
 
-	// Seed initial data if collection is empty
 	seedData()
 }
 
@@ -347,6 +358,155 @@ func addQuestion(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func getJobApplications(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	ctx := context.Background()
+
+	opts := options.Find().SetSort(bson.D{{"appliedDate", -1}})
+	cursor, err := JobApplicationCollection.Find(ctx, bson.D{}, opts)
+	if err != nil {
+		log.Printf("Error finding job applications: %v", err)
+		http.Error(w, "Failed to fetch applications", http.StatusInternalServerError)
+		return
+	}
+	defer cursor.Close(ctx)
+
+	var applications []JobApplication
+	if err = cursor.All(ctx, &applications); err != nil {
+		log.Printf("Error decoding job applciations: %v", err)
+		http.Error(w, "Failed to decode applications", http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(applications)
+}
+
+func createJobApplication(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	var newApplication JobApplication
+	if err := json.NewDecoder(r.Body).Decode(&newApplication); err != nil {
+		log.Printf("Error decoding request body: %v", err)
+		http.Error(w, "Invalid", http.StatusBadRequest)
+		return
+	}
+
+	if newApplication.Company == "" || newApplication.AppliedDate == "" {
+		http.Error(w, "Company and Date Required!!", http.StatusBadRequest)
+		return
+	}
+
+	if newApplication.Status == "" {
+		newApplication.Status = "applied"
+	}
+
+	now := time.Now()
+	newApplication.CreatedAt = now
+	newApplication.UpdatedAt = now
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	result, err := JobApplicationCollection.InsertOne(ctx, newApplication)
+	if err != nil {
+		log.Printf("Error inserting application to DB: %v", err)
+		http.Error(w, "Failed to save applications!", http.StatusInternalServerError)
+		return
+	}
+
+	newApplication.ID = result.InsertedID.(primitive.ObjectID)
+
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message":     "Application created!",
+		"application": newApplication,
+		"id":          newApplication.ID.Hex(),
+	})
+}
+
+func updateJobApplication(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	vars := mux.Vars(r)
+	idStr := vars["id"]
+
+	objectID, err := primitive.ObjectIDFromHex(idStr)
+	if err != nil {
+		http.Error(w, "Invalid application id!", http.StatusBadRequest)
+		return
+	}
+
+	var updateData JobApplication
+	if err := json.NewDecoder(r.Body).Decode(&updateData); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	updateData.UpdatedAt = time.Now()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	filter := bson.M{"_id": objectID}
+	update := bson.M{"$set": bson.M{
+		"company":     updateData.Company,
+		"appliedDate": updateData.AppliedDate,
+		"status":      updateData.Status,
+		"location":    updateData.Location,
+		"updatedAt":   updateData.UpdatedAt,
+	}}
+
+	result, err := JobApplicationCollection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		log.Printf("Error updating job application: %v", err)
+		http.Error(w, "Failed to update application", http.StatusInternalServerError)
+		return
+	}
+
+	if result.MatchedCount == 0 {
+		http.Error(w, "Application not found!", http.StatusNotFound)
+		return
+	}
+
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message": "Application updated successfully!",
+	})
+}
+
+func deleteJobApplication(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	vars := mux.Vars(r)
+	idStr := vars["id"]
+
+	objectID, err := primitive.ObjectIDFromHex(idStr)
+	if err != nil {
+		http.Error(w, "Invalid application ID", http.StatusBadRequest)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	filter := bson.M{"_id": objectID}
+	result, err := JobApplicationCollection.DeleteOne(ctx, filter)
+	if err != nil {
+		log.Printf("Error deleting job application: %v", err)
+		http.Error(w, "Failed to delete application", http.StatusInternalServerError)
+		return
+	}
+
+	if result.DeletedCount == 0 {
+		http.Error(w, "Application not found", http.StatusNotFound)
+		return
+	}
+
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message": "Application deleted!",
+	})
+}
+
 func main() {
 	// Connect to database first
 	connectDB()
@@ -366,6 +526,10 @@ func main() {
 	r.HandleFunc("/api/categories", getCategories).Methods("GET")
 	r.HandleFunc("/api/submit", submitAnswer).Methods("POST")
 	r.HandleFunc("/api/questions", addQuestion).Methods("POST")
+	r.HandleFunc("/api/job-applications", getJobApplications).Methods("GET")
+	r.HandleFunc("/api/job-applications", createJobApplication).Methods("POST")
+	r.HandleFunc("/api/job-applications/{id}", updateJobApplication).Methods("PUT")
+	r.HandleFunc("/api/job-applications/{id}", deleteJobApplication).Methods("DELETE")
 
 	// New JSON data endpoints (serve static JSON files)
 	r.HandleFunc("/api/ui-config", serveJSONFile("ui-config.json")).Methods("GET")
