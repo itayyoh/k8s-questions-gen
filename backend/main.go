@@ -43,13 +43,13 @@ type SubmissionResponse struct {
 }
 
 type JobApplication struct {
-	ID          primitive.ObjectID
-	Company     string
-	Status      string
-	Location    string
-	AppliedDate string
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	ID          primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	Company     string             `json:"company" bson:"company"`
+	Status      string             `json:"status" bson:"status"`
+	Location    string             `json:"location" bson:"location"`
+	AppliedDate string             `json:"appliedDate" bson:"appliedDate"`
+	CreatedAt   time.Time          `json:"createdAt" bson:"createdAt"`
+	UpdatedAt   time.Time          `json:"updatedAt" bson:"updatedAt"`
 }
 
 var mongoClient *mongo.Client
@@ -526,10 +526,10 @@ func main() {
 	r.HandleFunc("/api/categories", getCategories).Methods("GET")
 	r.HandleFunc("/api/submit", submitAnswer).Methods("POST")
 	r.HandleFunc("/api/questions", addQuestion).Methods("POST")
-	r.HandleFunc("/api/job-application", getJobApplications).Methods("GET")
-	r.HandleFunc("/api/job-application", createJobApplication).Methods("POST")
-	r.HandleFunc("/api/job-application/{id}", updateJobApplication).Methods("PUT")
-	r.HandleFunc("api/job-application/{id}", deleteJobApplication).Methods("DELETE")
+	r.HandleFunc("/api/job-applications", getJobApplications).Methods("GET")
+	r.HandleFunc("/api/job-applications", createJobApplication).Methods("POST")
+	r.HandleFunc("/api/job-applications/{id}", updateJobApplication).Methods("PUT")
+	r.HandleFunc("/api/job-applications/{id}", deleteJobApplication).Methods("DELETE")
 
 	// New JSON data endpoints (serve static JSON files)
 	r.HandleFunc("/api/ui-config", serveJSONFile("ui-config.json")).Methods("GET")
