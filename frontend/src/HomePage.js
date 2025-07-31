@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, Users, Code, Zap, ArrowRight, Clock, Target } from 'lucide-react';
+import { BookOpen, Users, Code, Zap, ArrowRight, Clock, Target, FileText, TrendingUp, Award } from 'lucide-react';
 import { loadHomepageData } from './utils/dataLoader';
 
 const HomePage = () => {
@@ -21,7 +21,10 @@ const HomePage = () => {
     Zap,
     Users,
     Clock,
-    BookOpen
+    BookOpen,
+    FileText,
+    TrendingUp,
+    Award
   };
 
   if (!homepageData) {
@@ -49,8 +52,8 @@ const HomePage = () => {
           </p>
         </div>
 
-        {/* Main Options */}
-        <div className="grid md:grid-cols-2 gap-8 max-w-6xl mx-auto">
+        {/* Main Options - Updated to 3 columns */}
+        <div className="grid md:grid-cols-3 gap-8 max-w-7xl mx-auto">
           
           {/* Kubernetes Quiz Box */}
           <div className="group relative">
@@ -125,6 +128,48 @@ const HomePage = () => {
                 className="w-full bg-purple-600 text-white py-3 px-6 rounded-lg hover:bg-purple-700 transition duration-200 flex items-center justify-center space-x-2 group"
               >
                 <span>Start Interview</span>
+                <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+              </button>
+            </div>
+          </div>
+
+          {/* Job Application Manager Box - NEW */}
+          <div className="group relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-green-600 to-teal-600 rounded-2xl blur opacity-75 group-hover:opacity-100 transition duration-300"></div>
+            <div className="relative bg-white rounded-2xl p-8 shadow-2xl transform group-hover:scale-105 transition duration-300">
+              
+              <div className="text-center mb-6">
+                <div className="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <FileText className="h-8 w-8 text-green-600" />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                  Manage Applications
+                </h2>
+                <p className="text-gray-600">
+                  Track your job applications, interviews, and follow-ups in one sophisticated dashboard
+                </p>
+              </div>
+
+              <div className="space-y-3 mb-8">
+                <div className="flex items-center space-x-3">
+                  <Target className="h-5 w-5 text-green-600" />
+                  <span className="text-gray-700">Application Tracking</span>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <TrendingUp className="h-5 w-5 text-green-600" />
+                  <span className="text-gray-700">Progress Analytics</span>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <Award className="h-5 w-5 text-green-600" />
+                  <span className="text-gray-700">Status Management</span>
+                </div>
+              </div>
+
+              <button
+                onClick={() => navigate('/job-applications')}
+                className="w-full bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 transition duration-200 flex items-center justify-center space-x-2 group"
+              >
+                <span>Manage Applications</span>
                 <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </button>
             </div>

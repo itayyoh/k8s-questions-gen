@@ -2,7 +2,8 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import HomePage from './HomePage';
 import InterviewSimulation from './InterviewSimulation';
-import KubernetesQuiz from './KubernetesQuiz'; // We'll rename your current App component
+import KubernetesQuiz from './KubernetesQuiz';
+import JobApplicationManager from './JobApplicationManager';
 
 function App() {
   return (
@@ -11,6 +12,7 @@ function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/kubernetes-quiz" element={<KubernetesQuiz />} />
         <Route path="/interview-simulation" element={<InterviewSimulation />} />
+        <Route path="/job-applications" element={<JobApplicationManager />} />
       </Routes>
     </Router>
   );

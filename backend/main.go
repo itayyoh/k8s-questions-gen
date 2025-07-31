@@ -45,7 +45,7 @@ type SubmissionResponse struct {
 type JobApplication struct {
 	ID          primitive.ObjectID
 	Company     string
-	Status     string
+	Status      string
 	Location    string
 	AppliedDate string
 	CreatedAt   time.Time
@@ -84,10 +84,8 @@ func connectDB() {
 	// Set global variables
 	mongoClient = client
 	questionsCollection = client.Database("k8s_interview").Collection("questions")
+	JobApplicationCollection = client.Database("k8s_interview").Collection("job_applications")
 
-	// Seed initial dient
-var questionsCollection *mongo.Collection
-var JobApplicationCollection $ata if collection is empty
 	seedData()
 }
 
@@ -360,7 +358,7 @@ func addQuestion(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func getJobApplication(w http.ResponseWriter, r *http.Request) {
+func getJobApplications(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	ctx := context.Background()
@@ -400,7 +398,7 @@ func createJobApplication(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if newApplication.Status == "" {
-		newApplication.Status == "applied"
+		newApplication.Status = "applied"
 	}
 
 	now := time.Now()
@@ -421,12 +419,11 @@ func createJobApplication(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"message": "Application created!",
+		"message":     "Application created!",
 		"application": newApplication,
-		"id": newApplication.ID.Hex()
+		"id":          newApplication.ID.Hex(),
 	})
 }
-
 
 func updateJobApplication(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
@@ -453,16 +450,16 @@ func updateJobApplication(w http.ResponseWriter, r *http.Request) {
 
 	filter := bson.M{"_id": objectID}
 	update := bson.M{"$set": bson.M{
-		"company" : updateData.Company,
-		"appliedDate" : updateData.AppliedDate,
-		"status": updateData.Status,
-		"location": updateData.Location,
-		"updatedAt": updateData.UpdatedAt,
+		"company":     updateData.Company,
+		"appliedDate": updateData.AppliedDate,
+		"status":      updateData.Status,
+		"location":    updateData.Location,
+		"updatedAt":   updateData.UpdatedAt,
 	}}
 
-	result, err := JobApplicationCollection.UpdateOne(ctx, filter , update)
+	result, err := JobApplicationCollection.UpdateOne(ctx, filter, update)
 	if err != nil {
-		logPrintf("Error updating job application: %v", err)
+		log.Printf("Error updating job application: %v", err)
 		http.Error(w, "Failed to update application", http.StatusInternalServerError)
 		return
 	}
@@ -474,6 +471,39 @@ func updateJobApplication(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"message": "Application updated successfully!",
+	})
+}
+
+func deleteJobApplication(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	vars := mux.Vars(r)
+	idStr := vars["id"]
+
+	objectID, err := primitive.ObjectIDFromHex(idStr)
+	if err != nil {
+		http.Error(w, "Invalid application ID", http.StatusBadRequest)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	filter := bson.M{"_id": objectID}
+	result, err := JobApplicationCollection.DeleteOne(ctx, filter)
+	if err != nil {
+		log.Printf("Error deleting job application: %v", err)
+		http.Error(w, "Failed to delete application", http.StatusInternalServerError)
+		return
+	}
+
+	if result.DeletedCount == 0 {
+		http.Error(w, "Application not found", http.StatusNotFound)
+		return
+	}
+
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message": "Application deleted!",
 	})
 }
 
@@ -496,6 +526,10 @@ func main() {
 	r.HandleFunc("/api/categories", getCategories).Methods("GET")
 	r.HandleFunc("/api/submit", submitAnswer).Methods("POST")
 	r.HandleFunc("/api/questions", addQuestion).Methods("POST")
+	r.HandleFunc("/api/job-application", getJobApplications).Methods("GET")
+	r.HandleFunc("/api/job-application", createJobApplication).Methods("POST")
+	r.HandleFunc("/api/job-application/{id}", updateJobApplication).Methods("PUT")
+	r.HandleFunc("api/job-application/{id}", deleteJobApplication).Methods("DELETE")
 
 	// New JSON data endpoints (serve static JSON files)
 	r.HandleFunc("/api/ui-config", serveJSONFile("ui-config.json")).Methods("GET")
