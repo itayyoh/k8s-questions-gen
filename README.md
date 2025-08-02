@@ -1,16 +1,3 @@
-steps to accomplish
+no new features for now!
 
-
-look into syncing some ai agent in to this program (future..)
-
-add auth (future..)
-
-add writers section (so you can add questions manually )
-
-thats it for now app side
-
-GCP k8s cluster is ready just need a good enough app to go to k8s 
-
-...test
-test
-# CI Test Wed Jul 23 10:37:01 PM IDT 2025
+infrastructure for next advancement!
