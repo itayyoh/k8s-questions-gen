@@ -497,7 +497,7 @@ const JobApplicationManager = () => {
     } finally {
       setLoading(false);
     }
-  }, [editingApp, formData]);
+  }, [editingApp, formData, resetForm]);
 
   const handleDelete = useCallback(async (id) => {
     if (!window.confirm('Are you sure you want to delete this application?')) return;
