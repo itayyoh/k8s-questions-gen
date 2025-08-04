@@ -7,8 +7,10 @@ import {
   MapPin, 
   Building, 
   Clock, 
+  CheckCircle, 
   XCircle, 
   AlertCircle, 
+  Eye, 
   Edit2, 
   Trash2, 
   TrendingUp, 
@@ -137,49 +139,52 @@ const Dashboard = ({
             <h3 className="text-xl font-semibold text-white">Recent Applications</h3>
           </div>
           <div className="divide-y divide-white/10">
-            {filteredApplications.slice(0, 10).map((app) => (
-              <div key={app.id} className="p-6 hover:bg-white/5 transition duration-200">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3 mb-3">
-                      <h4 className="text-lg font-semibold text-white">{app.company}</h4>
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(app.status)}`}>
-                        {getStatusIcon(app.status)}
-                        <span className="ml-1 capitalize">{app.status}</span>
-                      </span>
-                    </div>
-                    <div className="flex items-center space-x-4 text-sm text-blue-200">
-                      {app.location && (
+            {filteredApplications.slice(0, 10).map((app) => {
+              console.log('Rendering app:', app); // Debug log
+              return (
+                <div key={app.id || app._id} className="p-6 hover:bg-white/5 transition duration-200">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-3 mb-3">
+                        <h4 className="text-lg font-semibold text-white">{app.company}</h4>
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(app.status)}`}>
+                          {getStatusIcon(app.status)}
+                          <span className="ml-1 capitalize">{app.status}</span>
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-4 text-sm text-blue-200">
+                        {app.location && (
+                          <div className="flex items-center">
+                            <MapPin className="h-4 w-4 mr-1" />
+                            {app.location}
+                          </div>
+                        )}
                         <div className="flex items-center">
-                          <MapPin className="h-4 w-4 mr-1" />
-                          {app.location}
+                          <Calendar className="h-4 w-4 mr-1" />
+                          Applied {formatDate(app.appliedDate)}
                         </div>
-                      )}
-                      <div className="flex items-center">
-                        <Calendar className="h-4 w-4 mr-1" />
-                        Applied {formatDate(app.appliedDate)}
                       </div>
                     </div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <button 
-                      onClick={() => onEdit(app)}
-                      className="p-2 text-blue-300 hover:text-green-300 hover:bg-green-500/20 rounded transition duration-200"
-                      title="Edit"
-                    >
-                      <Edit2 className="h-4 w-4" />
-                    </button>
-                    <button 
-                      onClick={() => onDelete(app.id)}
-                      className="p-2 text-blue-300 hover:text-red-300 hover:bg-red-500/20 rounded transition duration-200" 
-                      title="Delete"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                    <div className="flex items-center space-x-2">
+                      <button 
+                        onClick={() => onEdit(app)}
+                        className="p-2 text-blue-300 hover:text-green-300 hover:bg-green-500/20 rounded transition duration-200"
+                        title="Edit"
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </button>
+                      <button 
+                        onClick={() => onDelete(app.id || app._id)}
+                        className="p-2 text-blue-300 hover:text-red-300 hover:bg-red-500/20 rounded transition duration-200" 
+                        title="Delete"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </>
@@ -204,7 +209,7 @@ const ApplicationList = ({
       <div className="bg-white/10 backdrop-blur-lg rounded-xl border border-white/20">
         <div className="divide-y divide-white/10">
           {filteredApplications.map((app) => (
-            <div key={app.id} className="p-6 hover:bg-white/5 transition duration-200">
+            <div key={app.id || app._id} className="p-6 hover:bg-white/5 transition duration-200">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center space-x-3 mb-3">
@@ -236,7 +241,7 @@ const ApplicationList = ({
                     <Edit2 className="h-4 w-4" />
                   </button>
                   <button 
-                    onClick={() => onDelete(app.id)}
+                    onClick={() => onDelete(app.id || app._id)}
                     className="p-2 text-blue-300 hover:text-red-300 hover:bg-red-500/20 rounded transition duration-200" 
                     title="Delete"
                   >
@@ -487,7 +492,15 @@ const JobApplicationManager = () => {
       if (response.ok) {
         console.log('Application saved successfully');
         await fetchApplications();
-        resetForm();
+        // Reset form inline to avoid dependency issue
+        setFormData({
+          company: '',
+          appliedDate: new Date().toISOString().split('T')[0],
+          status: 'applied',
+          location: ''
+        });
+        setShowAddForm(false);
+        setEditingApp(null);
       } else {
         const errorText = await response.text();
         console.error('Failed to save application:', response.status, errorText);
@@ -530,17 +543,6 @@ const JobApplicationManager = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
-
-  const resetForm = useCallback(() => {
-    setFormData({
-      company: '',
-      appliedDate: new Date().toISOString().split('T')[0],
-      status: 'applied',
-      location: ''
-    });
-    setShowAddForm(false);
-    setEditingApp(null);
   }, []);
 
   const handleEdit = useCallback((app) => {
@@ -675,7 +677,16 @@ const JobApplicationManager = () => {
             editingApp={editingApp}
             formData={formData}
             loading={loading}
-            onClose={resetForm}
+            onClose={() => {
+              setFormData({
+                company: '',
+                appliedDate: new Date().toISOString().split('T')[0],
+                status: 'applied',
+                location: ''
+              });
+              setShowAddForm(false);
+              setEditingApp(null);
+            }}
             onSubmit={handleFormSubmit}
             onInputChange={handleInputChange}
           />
