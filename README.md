@@ -1,3 +1,3 @@
-no new features for now!
+terraform configuration in process atm!
 
-infrastructure for next advancement!
+deploying on GCP
